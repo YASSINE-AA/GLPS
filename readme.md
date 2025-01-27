@@ -27,7 +27,7 @@ GLPS aims to provide a robust, flexible graphics rendering framework with compre
 | **Advanced Features** | Wayland Compositor | ✅ Implemented | Registry interactions |
 | | XDG-Shell Support | ✅ Implemented | Surface and toplevel management |
 | | Clipboard Integration | ✅ Implemented | Cross-application data transfer |
-| | Drag-and-Drop | ⬜ Planned | Enhanced user interaction |
+| | Drag-and-Drop |  ✅ Implemented | Enhanced user interaction |
 | **Development Tools** | Logging | ✅ Implemented | [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger) integration |
 
 ## Upcoming Development Priorities

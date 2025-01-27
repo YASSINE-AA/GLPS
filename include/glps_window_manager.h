@@ -82,8 +82,8 @@ void glps_wm_destroy(glps_WindowManager *wm);
  * @param keyboard_enter_callback Function to call on keyboard focus gain.
  */
 void glps_wm_set_keyboard_enter_callback(
-    glps_WindowManager *wm, void (*keyboard_enter_callback)(void *data),
-    void *data);
+    glps_WindowManager *wm,
+    void (*keyboard_enter_callback)(size_t window_id, void *data), void *data);
 
 /**
  * @brief Sets the callback for keyboard focus loss events.
@@ -91,8 +91,8 @@ void glps_wm_set_keyboard_enter_callback(
  * @param keyboard_leave_callback Function to call on keyboard focus loss.
  */
 void glps_wm_set_keyboard_leave_callback(
-    glps_WindowManager *wm, void (*keyboard_leave_callback)(void *data),
-    void *data);
+    glps_WindowManager *wm,
+    void (*keyboard_leave_callback)(size_t window_id, void *data), void *data);
 
 /**
  * @brief Sets the callback for key press and release events.
@@ -101,7 +101,8 @@ void glps_wm_set_keyboard_leave_callback(
  * @note There is a known issue with some keys not returning values.
  */
 void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
-                                   void (*keyboard_callback)(bool state,
+                                   void (*keyboard_callback)(size_t window_id,
+                                                             bool state,
                                                              const char *value,
                                                              void *data),
                                    void *data);
@@ -115,7 +116,8 @@ void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
  */
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
-    void (*mouse_enter_callback)(double mouse_x, double mouse_y, void *data),
+    void (*mouse_enter_callback)(size_t window_id, double mouse_x,
+                                 double mouse_y, void *data),
     void *data);
 
 /**
@@ -123,20 +125,20 @@ void glps_wm_set_mouse_enter_callback(
  * @param wm Pointer to the GLPS Window Manager.
  * @param mouse_leave_callback Function to call when the mouse leaves a window.
  */
-void glps_wm_set_mouse_leave_callback(glps_WindowManager *wm,
-                                      void (*mouse_leave_callback)(void *data),
-                                      void *data);
+void glps_wm_set_mouse_leave_callback(
+    glps_WindowManager *wm,
+    void (*mouse_leave_callback)(size_t window_id, void *data), void *data);
 
 /**
  * @brief Sets the callback for mouse movement events.
  * @param wm Pointer to the GLPS Window Manager.
  * @param mouse_move_callback Function to call on mouse movement.
  */
-void glps_wm_set_mouse_move_callback(glps_WindowManager *wm,
-                                     void (*mouse_move_callback)(double mouse_x,
-                                                                 double mouse_y,
-                                                                 void *data),
-                                     void *data);
+void glps_wm_set_mouse_move_callback(
+    glps_WindowManager *wm,
+    void (*mouse_move_callback)(size_t window_id, double mouse_x,
+                                double mouse_y, void *data),
+    void *data);
 
 /**
  * @brief Sets the callback for mouse button events.
@@ -144,10 +146,10 @@ void glps_wm_set_mouse_move_callback(glps_WindowManager *wm,
  * @param mouse_click_callback Function to call on mouse button press or
  * release.
  */
-void glps_wm_set_mouse_click_callback(glps_WindowManager *wm,
-                                      void (*mouse_click_callback)(bool state,
-                                                                   void *data),
-                                      void *data);
+void glps_wm_set_mouse_click_callback(
+    glps_WindowManager *wm,
+    void (*mouse_click_callback)(size_t window_id, bool state, void *data),
+    void *data);
 
 /**
  * @brief Sets the callback for mouse scroll events.
@@ -156,7 +158,7 @@ void glps_wm_set_mouse_click_callback(glps_WindowManager *wm,
  */
 void glps_wm_set_scroll_callback(
     glps_WindowManager *wm,
-    void (*mouse_scroll_callback)(GLPS_SCROLL_AXES axe,
+    void (*mouse_scroll_callback)(size_t window_id, GLPS_SCROLL_AXES axe,
                                   GLPS_SCROLL_SOURCE source, double value,
                                   int discrete, bool is_stopped, void *data),
     void *data);
@@ -170,7 +172,7 @@ void glps_wm_set_scroll_callback(
  */
 void glps_wm_set_touch_callback(
     glps_WindowManager *wm,
-    void (*touch_callback)(int id, double touch_x, double touch_y, bool state,
+    void (*touch_callback)(size_t window_id, int id, double touch_x, double touch_y, bool state,
                            double major, double minor, double orientation,
                            void *data),
     void *data);

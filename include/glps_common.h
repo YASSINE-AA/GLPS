@@ -80,6 +80,8 @@ struct pointer_event {
     int32_t discrete;   /**< Discrete axis value. */
   } axes[2];            /**< Data for horizontal and vertical axes. */
   uint32_t axis_source; /**< Source of the axis event. */
+
+  size_t window_id;
 };
 
 /**
@@ -140,6 +142,7 @@ struct touch_event {
   uint32_t time;                 /**< Timestamp of the event. */
   uint32_t serial;               /**< Serial number of the event. */
   struct touch_point points[10]; /**< Array of touch points. */
+  size_t window_id;
 };
 
 /**
@@ -243,6 +246,9 @@ typedef struct {
   struct wl_data_offer *current_drag_offer;
   uint32_t current_serial;
   uint32_t keyboard_serial;
+  size_t keyboard_window_id;
+  size_t mouse_window_id;
+  size_t touch_window_id;
   size_t current_drag_n_drop_window;
 } glps_WaylandContext;
 
@@ -250,8 +256,6 @@ struct clipboard_data {
   char mime_type[64];
   char buff[1024];
 };
-
-
 
 struct glps_Callback {
   glps_WaylandContext *wayland_ctx;         /**< Wayland context. */
@@ -266,26 +270,29 @@ struct glps_Callback {
   struct pointer_event pointer_event; /**< Current pointer event data. */
   struct clipboard_data clipboard;    /**< Current clipboard data. */
   void (*keyboard_enter_callback)(
-      void *data); /**< Callback for keyboard enter. */
+      size_t window_id, void *data); /**< Callback for keyboard enter. */
   void (*keyboard_leave_callback)(
-      void *data); /**< Callback for keyboard leave. */
-  void (*keyboard_callback)(bool state, const char *value,
+      size_t window_id, void *data); /**< Callback for keyboard leave. */
+  void (*keyboard_callback)(size_t window_id, bool state, const char *value,
                             void *data); /**< Callback for keyboard input. */
-  void (*mouse_enter_callback)(double mouse_x, double mouse_y,
+  void (*mouse_enter_callback)(size_t window_id, double mouse_x, double mouse_y,
                                void *data); /**< Callback for mouse enter. */
-  void (*mouse_leave_callback)(void *data); /**< Callback for mouse leave. */
-  void (*mouse_move_callback)(double mouse_x, double mouse_y,
+  void (*mouse_leave_callback)(size_t window_id,
+                               void *data); /**< Callback for mouse leave. */
+  void (*mouse_move_callback)(size_t window_id, double mouse_x, double mouse_y,
                               void *data); /**< Callback for mouse move. */
-  void (*mouse_click_callback)(bool state,
+  void (*mouse_click_callback)(size_t window_id, bool state,
                                void *data); /**< Callback for mouse click. */
-  void (*mouse_scroll_callback)(GLPS_SCROLL_AXES axe, GLPS_SCROLL_SOURCE source,
-                                double value, int discrete, bool is_stopped,
+  void (*mouse_scroll_callback)(size_t window_id, GLPS_SCROLL_AXES axe,
+                                GLPS_SCROLL_SOURCE source, double value,
+                                int discrete, bool is_stopped,
                                 void *data); /**< Callback for mouse scroll. */
-  void (*touch_callback)(int id, double touch_x, double touch_y, bool state,
-                         double major, double minor, double orientation,
+  void (*touch_callback)(size_t window_id, int id, double touch_x,
+                         double touch_y, bool state, double major, double minor,
+                         double orientation,
                          void *data); /**< Callback for touch events. */
   void (*drag_n_drop_callback)(
-      size_t origin_window_id, char *mime, char *buff,
+      size_t window_id, char *mime, char *buff,
       void *data); /**< Callback fro drag & drop events. */
 
   void *mouse_enter_data;
@@ -319,6 +326,5 @@ typedef struct {
   struct glps_Callback callbacks;
 
 } glps_WindowManager;
-
 
 #endif // GLPS_COMMON_H

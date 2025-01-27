@@ -20,11 +20,13 @@
 #include "include/glps_window_manager.h"
 #include "internal/utils/logger/pico_logger.h"
 glps_WindowManager *wm = NULL;
-void mouse_leave_callback(void *data) { LOG_INFO("Mouse left."); }
+void mouse_leave_callback(size_t window_id, void *data) {
+  LOG_INFO("Mouse left.");
+}
 
-void mouse_scroll_callback(GLPS_SCROLL_AXES axe, GLPS_SCROLL_SOURCE source,
-                           double value, int discrete, bool is_stopped,
-                           void *data) {
+void mouse_scroll_callback(size_t window_id, GLPS_SCROLL_AXES axe,
+                           GLPS_SCROLL_SOURCE source, double value,
+                           int discrete, bool is_stopped, void *data) {
 
   LOG_INFO("%s scroll via %s with value %.2lf discrete %d stopped %d",
            axe == GLPS_SCROLL_H_AXIS ? "horizontal" : "vertical",
@@ -38,11 +40,12 @@ void drag_n_drop_callback(size_t origin_window_id, char *mime, char *buff,
            mime, buff);
 }
 
-void mouse_enter_callback(double mouse_x, double mouse_y, void *data) {
+void mouse_enter_callback(size_t window_id, double mouse_x, double mouse_y,
+                          void *data) {
   LOG_INFO("Mouse entered at x: %lf y:%lf", mouse_x, mouse_y);
 }
 
-void mouse_click_callback(bool state, void *data) {
+void mouse_click_callback(size_t window_id, bool state, void *data) {
   if (data == NULL) {
     LOG_ERROR("null");
   } else {
@@ -52,23 +55,27 @@ void mouse_click_callback(bool state, void *data) {
                                   "dhiee");
   }
 
-  LOG_INFO("Mouse %s", state ? "pressed" : "released");
+  LOG_INFO("Window %ld Mouse %s", window_id, state ? "pressed" : "released");
 }
 
-void mouse_move_callback(double mouse_x, double mouse_y, void *data) {
+void mouse_move_callback(size_t window_id, double mouse_x, double mouse_y,
+                         void *data) {
   LOG_INFO("x: %lf y:%lf", mouse_x, mouse_y);
 }
 
 void keyboard_enter_callback() { LOG_INFO("keyboard entered."); }
 
-void keyboard_callback(bool state, const char *value, void *data) {
-  LOG_INFO("state: %d value:%s", state, value);
+void keyboard_callback(size_t window_id, bool state, const char *value,
+                       void *data) {
+  LOG_INFO("window %ld state: %d value:%s",window_id, state, value);
   char buff[1024];
   glps_wm_get_from_clipboard(wm, buff, 1024);
   LOG_INFO("Clipboard content is: %s", buff);
 }
 
-void keyboard_leave_callback(void *data) { LOG_INFO("keyboard left."); }
+void keyboard_leave_callback(size_t window_id, void *data) {
+  LOG_INFO("keyboard left.");
+}
 
 int main(int argc, char *argv[]) {
 

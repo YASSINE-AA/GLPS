@@ -16,6 +16,23 @@ static glps_WaylandContext *__get_wl_context(glps_WindowManager *wm) {
   return wm->wayland_ctx;
 }
 
+static ssize_t __get_window_id_from_surface(glps_WindowManager *wm,
+                                            struct wl_surface *surface) {
+
+  if (wm == NULL || surface == NULL) {
+    LOG_ERROR("Couldn't get window id from surface, Window manager and/or "
+              "Surface is NULL.");
+    return -1;
+  }
+
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (surface == wm->windows[i]->wl_surface)
+      return i;
+  }
+
+  return -1;
+}
+
 static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
                              uint32_t serial) {
   xdg_wm_base_pong(xdg_wm_base, serial);
@@ -30,10 +47,27 @@ static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
                              uint32_t serial, struct wl_surface *surface,
                              wl_fixed_t surface_x, wl_fixed_t surface_y) {
   glps_WindowManager *context = (glps_WindowManager *)data;
+
+  ssize_t window_id = __get_window_id_from_surface(context, surface);
+  if (window_id < 0) {
+    LOG_ERROR("Origin window id is invalid.");
+    return;
+  }
+
+  LOG_INFO("window id %ld", window_id);
   context->pointer_event.event_mask |= POINTER_EVENT_ENTER;
   context->pointer_event.serial = serial;
   context->pointer_event.surface_x = surface_x,
   context->pointer_event.surface_y = surface_y;
+
+  glps_WaylandContext *wayland_context = __get_wl_context(context);
+
+  if (wayland_context == NULL) {
+    LOG_ERROR("Couldn't fetch wayland context.");
+    return;
+  }
+
+  wayland_context->mouse_window_id = (size_t)window_id;
 }
 
 static void wl_pointer_leave(void *data, struct wl_pointer *wl_pointer,
@@ -98,11 +132,17 @@ static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
   glps_WindowManager *context = (glps_WindowManager *)data;
   struct pointer_event *event = &context->pointer_event;
+  glps_WaylandContext *wayland_context = __get_wl_context(context);
 
+  if (wayland_context == NULL) {
+    LOG_ERROR("Couldn't fetch wayland context.");
+    return;
+  }
   if (event->event_mask & POINTER_EVENT_ENTER) {
     // Mouse enter callback
     if (context->callbacks.mouse_enter_callback) {
       context->callbacks.mouse_enter_callback(
+          wayland_context->mouse_window_id,
           wl_fixed_to_double(event->surface_x),
           wl_fixed_to_double(event->surface_y),
           context->callbacks.mouse_enter_data);
@@ -113,6 +153,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
     // Mouse leave callback
     if (context->callbacks.mouse_leave_callback) {
       context->callbacks.mouse_leave_callback(
+          wayland_context->mouse_window_id,
           context->callbacks.mouse_leave_data);
     }
   }
@@ -121,6 +162,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
     // Mouse move callback
     if (context->callbacks.mouse_move_callback) {
       context->callbacks.mouse_move_callback(
+          wayland_context->mouse_window_id,
           wl_fixed_to_double(event->surface_x),
           wl_fixed_to_double(event->surface_y),
           context->callbacks.mouse_move_data);
@@ -134,6 +176,7 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
     // Mouse click callback
     if (context->callbacks.mouse_click_callback) {
       context->callbacks.mouse_click_callback(
+          wayland_context->mouse_window_id,
           event->state == WL_POINTER_BUTTON_STATE_RELEASED ? false : true,
           context->callbacks.mouse_click_data);
     }
@@ -175,6 +218,8 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
         bool is_stopped = event->event_mask & POINTER_EVENT_AXIS_STOP;
 
         context->callbacks.mouse_scroll_callback(
+            wayland_context->mouse_window_id,
+
             axe, source, value, discrete, is_stopped,
             context->callbacks.mouse_scroll_data);
       }
@@ -185,7 +230,8 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer) {
 
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
-    void (*mouse_enter_callback)(double mouse_x, double mouse_y, void *data),
+    void (*mouse_enter_callback)(size_t window_id, double mouse_x,
+                                 double mouse_y, void *data),
     void *data) {
 
   if (wm == NULL || mouse_enter_callback == NULL) {
@@ -197,9 +243,9 @@ void glps_wm_set_mouse_enter_callback(
   wm->callbacks.mouse_move_data = data;
 }
 
-void glps_wm_set_mouse_leave_callback(glps_WindowManager *wm,
-                                      void (*mouse_leave_callback)(void *data),
-                                      void *data) {
+void glps_wm_set_mouse_leave_callback(
+    glps_WindowManager *wm,
+    void (*mouse_leave_callback)(size_t window_id, void *data), void *data) {
 
   if (wm == NULL || mouse_leave_callback == NULL) {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
@@ -210,11 +256,11 @@ void glps_wm_set_mouse_leave_callback(glps_WindowManager *wm,
   wm->callbacks.mouse_leave_data = data;
 }
 
-void glps_wm_set_mouse_move_callback(glps_WindowManager *wm,
-                                     void (*mouse_move_callback)(double mouse_x,
-                                                                 double mouse_y,
-                                                                 void *data),
-                                     void *data) {
+void glps_wm_set_mouse_move_callback(
+    glps_WindowManager *wm,
+    void (*mouse_move_callback)(size_t window_id, double mouse_x,
+                                double mouse_y, void *data),
+    void *data) {
 
   if (wm == NULL || mouse_move_callback == NULL) {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
@@ -225,10 +271,10 @@ void glps_wm_set_mouse_move_callback(glps_WindowManager *wm,
   wm->callbacks.mouse_move_data = data;
 }
 
-void glps_wm_set_mouse_click_callback(glps_WindowManager *wm,
-                                      void (*mouse_click_callback)(bool state,
-                                                                   void *data),
-                                      void *data) {
+void glps_wm_set_mouse_click_callback(
+    glps_WindowManager *wm,
+    void (*mouse_click_callback)(size_t window_id, bool state, void *data),
+    void *data) {
 
   if (wm == NULL || mouse_click_callback == NULL) {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
@@ -241,7 +287,7 @@ void glps_wm_set_mouse_click_callback(glps_WindowManager *wm,
 
 void glps_wm_set_scroll_callback(
     glps_WindowManager *wm,
-    void (*mouse_scroll_callback)(GLPS_SCROLL_AXES axe,
+    void (*mouse_scroll_callback)(size_t window_id, GLPS_SCROLL_AXES axe,
                                   GLPS_SCROLL_SOURCE source, double value,
                                   int discrete, bool is_stopped, void *data),
     void *data) {
@@ -299,10 +345,18 @@ static void wl_keyboard_enter(void *data, struct wl_keyboard *wl_keyboard,
 
   glps_WindowManager *wm = (glps_WindowManager *)data;
   if (wm->callbacks.keyboard_enter_callback != NULL) {
-    wm->callbacks.keyboard_enter_callback(wm->callbacks.keyboard_enter_data);
+    wm->callbacks.keyboard_enter_callback(context->keyboard_window_id,
+                                          wm->callbacks.keyboard_enter_data);
   }
+  ssize_t window_id = __get_window_id_from_surface(wm, surface);
 
+  if (window_id < 0) {
+
+    LOG_ERROR("Origin window id is invalid.");
+    return;
+  }
   context->keyboard_serial = serial;
+  context->keyboard_window_id = (size_t)window_id;
 
   uint32_t *key;
   wl_array_for_each(key, keys) {
@@ -337,6 +391,7 @@ static void wl_keyboard_key(void *data, struct wl_keyboard *wl_keyboard,
   glps_WindowManager *wm = (glps_WindowManager *)data;
   if (wm->callbacks.keyboard_callback != NULL) {
     wm->callbacks.keyboard_callback(
+        context->keyboard_window_id,
         state == WL_KEYBOARD_KEY_STATE_PRESSED ? true : false,
         (utf8[0] != '\0' ? utf8 : name), wm->callbacks.keyboard_data);
   }
@@ -346,7 +401,8 @@ static void wl_keyboard_leave(void *data, struct wl_keyboard *wl_keyboard,
                               uint32_t serial, struct wl_surface *surface) {
   glps_WindowManager *wm = (glps_WindowManager *)data;
   if (wm->callbacks.keyboard_leave_callback != NULL) {
-    wm->callbacks.keyboard_leave_callback(wm->callbacks.keyboard_leave_data);
+    wm->callbacks.keyboard_leave_callback(wm->wayland_ctx->keyboard_window_id,
+                                          wm->callbacks.keyboard_leave_data);
   }
 }
 static void wl_keyboard_modifiers(void *data, struct wl_keyboard *wl_keyboard,
@@ -364,8 +420,8 @@ static void wl_keyboard_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
                                     int32_t rate, int32_t delay) {}
 
 void glps_wm_set_keyboard_enter_callback(
-    glps_WindowManager *wm, void (*keyboard_enter_callback)(void *data),
-    void *data) {
+    glps_WindowManager *wm,
+    void (*keyboard_enter_callback)(size_t window_id, void *data), void *data) {
 
   if (wm == NULL || keyboard_enter_callback == NULL) {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
@@ -377,7 +433,8 @@ void glps_wm_set_keyboard_enter_callback(
 }
 
 void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
-                                   void (*keyboard_callback)(bool state,
+                                   void (*keyboard_callback)(size_t window_id,
+                                                             bool state,
                                                              const char *value,
                                                              void *data),
                                    void *data) {
@@ -392,8 +449,8 @@ void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
 }
 
 void glps_wm_set_keyboard_leave_callback(
-    glps_WindowManager *wm, void (*keyboard_leave_callback)(void *data),
-    void *data) {
+    glps_WindowManager *wm,
+    void (*keyboard_leave_callback)(size_t window_id, void *data), void *data) {
 
   if (wm == NULL || keyboard_leave_callback == NULL) {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
@@ -449,6 +506,12 @@ static void wl_touch_down(void *data, struct wl_touch *wl_touch,
 
   glps_WindowManager *wm = (glps_WindowManager *)data;
 
+  ssize_t window_id = __get_window_id_from_surface(wm, surface);
+  if (window_id < 0) {
+    LOG_ERROR("Window id is invalid.");
+    return;
+  }
+
   struct touch_point *point = get_touch_point(wm, id);
   if (point == NULL) {
     return;
@@ -458,6 +521,14 @@ static void wl_touch_down(void *data, struct wl_touch *wl_touch,
   point->surface_y = wl_fixed_to_double(y);
   wm->touch_event.time = time;
   wm->touch_event.serial = serial;
+
+  glps_WaylandContext *context = __get_wl_context(wm);
+  if (context == NULL) {
+    LOG_ERROR("Couldn't fetch wayland context.");
+    return;
+  }
+
+  context->touch_window_id = (size_t)window_id;
 }
 
 static void wl_touch_up(void *data, struct wl_touch *wl_touch, uint32_t serial,
@@ -553,6 +624,7 @@ static void wl_touch_frame(void *data, struct wl_touch *wl_touch) {
     }
     if (wm->callbacks.touch_callback) {
       wm->callbacks.touch_callback(
+          touch->window_id,
           touch->points[i].id,                  // id
           wl_fixed_to_double(point->surface_x), // touch_x
           wl_fixed_to_double(point->surface_y), // touch_y
@@ -566,6 +638,22 @@ static void wl_touch_frame(void *data, struct wl_touch *wl_touch) {
     }
     point->valid = false;
   }
+}
+
+void glps_wm_set_touch_callback(
+    glps_WindowManager *wm,
+    void (*touch_callback)(size_t window_id, int id, double touch_x,
+                           double touch_y, bool state, double major,
+                           double minor, double orientation, void *data),
+    void *data) {
+
+  if (wm == NULL || touch_callback == NULL) {
+    LOG_ERROR("Window Manager and/or Touch Callback NULL");
+    return;
+  }
+
+  wm->callbacks.touch_callback = touch_callback;
+  wm->callbacks.touch_data = data;
 }
 
 static const struct wl_touch_listener wl_touch_listener = {
@@ -785,9 +873,9 @@ static void data_device_handle_drop(void *data,
   ssize_t bytes_read = read(fds[0], buffer, sizeof(buffer));
 
   if (wm->callbacks.drag_n_drop_callback) {
-    wm->callbacks.drag_n_drop_callback(context->current_drag_n_drop_window,
-                                       "text/plain", buffer,
-                                       wm->callbacks.drag_n_drop_data);
+
+    wm->callbacks.drag_n_drop_callback(context->mouse_window_id, "text/plain",
+                                       buffer, wm->callbacks.drag_n_drop_data);
   }
   close(fds[0]);
 

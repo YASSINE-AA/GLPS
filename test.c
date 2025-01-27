@@ -54,7 +54,8 @@ void mouse_click_callback(size_t window_id, bool state, void *data) {
       glps_wm_attach_to_clipboard((glps_WindowManager *)data, "text/plain",
                                   "dhiee");
   }
-
+  glps_wm_window_resize(wm, window_id, 100,
+                      100, 0, 0);
   LOG_INFO("Window %ld Mouse %s", window_id, state ? "pressed" : "released");
 }
 

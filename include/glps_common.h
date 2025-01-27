@@ -203,6 +203,8 @@ typedef struct {
  */
 typedef struct {
   char title[64]; /**< Title of the window. */
+  int width;
+  int height;
 } glps_WindowProperties;
 
 /**
@@ -219,6 +221,7 @@ typedef struct {
   EGLSurface egl_surface; /**< EGL surface. */
   struct wl_egl_window *egl_window; /**< Wayland EGL window. */
   glps_WindowProperties properties; /**< Window properties. */
+  uint32_t serial;
 } glps_WaylandWindow;
 
 /**

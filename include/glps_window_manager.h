@@ -27,6 +27,9 @@ glps_WindowManager *glps_wm_init(void);
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height);
 
+void glps_wm_window_resize(glps_WindowManager *wm, size_t window_id, int width,
+                     int height, int dx, int dy);
+
 /**
  * @brief Sets the OpenGL context of a specific window as the current context.
  * @param wm Pointer to the GLPS Window Manager.
@@ -172,9 +175,9 @@ void glps_wm_set_scroll_callback(
  */
 void glps_wm_set_touch_callback(
     glps_WindowManager *wm,
-    void (*touch_callback)(size_t window_id, int id, double touch_x, double touch_y, bool state,
-                           double major, double minor, double orientation,
-                           void *data),
+    void (*touch_callback)(size_t window_id, int id, double touch_x,
+                           double touch_y, bool state, double major,
+                           double minor, double orientation, void *data),
     void *data);
 
 /* ======= Clipboard ======= */

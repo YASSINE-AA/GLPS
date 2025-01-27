@@ -6,6 +6,7 @@
 #include <string.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
+#include <wayland-egl-core.h>
 #include <xkbcommon/xkbcommon.h>
 
 static glps_WaylandContext *__get_wl_context(glps_WindowManager *wm) {
@@ -31,6 +32,62 @@ static ssize_t __get_window_id_from_surface(glps_WindowManager *wm,
   }
 
   return -1;
+}
+
+static ssize_t __get_window_id_from_xdg_surface(glps_WindowManager *wm,
+                                                struct xdg_surface *surface) {
+
+  if (wm == NULL || surface == NULL) {
+    LOG_ERROR("Couldn't get window id from surface, Window manager and/or "
+              "Surface is NULL.");
+    return -1;
+  }
+
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (surface == wm->windows[i]->xdg_surface)
+      return i;
+  }
+
+  return -1;
+}
+
+static ssize_t
+__get_window_id_from_xdg_toplevel(glps_WindowManager *wm,
+                                  struct xdg_toplevel *toplevel) {
+
+  if (wm == NULL || toplevel == NULL) {
+    LOG_ERROR("Couldn't get window id from toplevel, Window manager and/or "
+              "toplevel is NULL.");
+    return -1;
+  }
+
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (toplevel == wm->windows[i]->xdg_toplevel)
+      return i;
+  }
+
+  return -1;
+}
+
+void glps_wm_window_resize(glps_WindowManager *wm, size_t window_id, int width,
+                           int height, int dx, int dy) {
+  if (wm == NULL) {
+    LOG_ERROR("Couldn't resize window. Window Manager is NULL.");
+    return;
+  }
+
+  glps_WaylandContext *ctx = __get_wl_context(wm);
+
+  if (ctx == NULL) {
+    LOG_ERROR("Couldn't resize window. Wayland Context is NULL.");
+    return;
+  }
+
+  // wl_egl_window_resize(wm->windows[window_id]->egl_surface, width, height,
+  // dx,
+  //                     dy);
+  xdg_toplevel_resize(wm->windows[window_id]->xdg_toplevel, ctx->wl_seat,
+                      wm->windows[window_id]->serial, 10);
 }
 
 static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
@@ -1214,9 +1271,54 @@ static void frame_callback_done(void *data, struct wl_callback *callback,
 static const struct wl_callback_listener frame_callback_listener = {
     .done = frame_callback_done};
 
+static void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
+                                      int32_t width, int32_t height,
+                                      struct wl_array *states) {
+  glps_WindowManager *wm = (glps_WindowManager *)data;
+
+  ssize_t window_id = __get_window_id_from_xdg_toplevel(wm, toplevel);
+  if (window_id < 0) {
+    LOG_ERROR("Window ID is invalid.");
+    return;
+  }
+  glps_WaylandWindow *window = wm->windows[window_id];
+
+  if (width != 0 && height != 0) {
+    window->properties.height = height;
+    window->properties.width = width;
+  }
+}
+
+static void handle_toplevel_close() { LOG_ERROR("Window closed."); }
+
+struct xdg_toplevel_listener toplevel_listener = {
+    .configure = handle_toplevel_configure,
+    .close = handle_toplevel_close,
+};
+
 static void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
                                   uint32_t serial) {
+  glps_WindowManager *wm = (glps_WindowManager *)data;
+
+  if (wm == NULL) {
+    LOG_ERROR("Couldn't configure XDG Surface. Window Manager is NULL.");
+    return;
+  }
+
+  glps_WaylandContext *ctx = __get_wl_context(wm);
+  if (ctx == NULL) {
+    LOG_ERROR("Couldn't configure XDG Surface. Window Manager is NULL.");
+    return;
+  }
+
   xdg_surface_ack_configure(xdg_surface, serial);
+
+  ssize_t window_id = __get_window_id_from_xdg_surface(wm, xdg_surface);
+  if (window_id < 0) {
+    return;
+  }
+
+  wm->windows[(size_t)window_id]->serial = serial;
 }
 
 static const struct xdg_surface_listener xdg_surface_listener = {
@@ -1412,7 +1514,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   }
 
   if (xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener,
-                               NULL) == -1) {
+                               wm) == -1) {
     fprintf(stderr, "Failed to add XDG surface listener\n");
     exit(EXIT_FAILURE);
   }
@@ -1425,7 +1527,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
 
   xdg_toplevel_set_title(window->xdg_toplevel, title);
   strcpy(window->properties.title, title);
-
+  xdg_toplevel_add_listener(window->xdg_toplevel, &toplevel_listener, wm);
   if (wm->wayland_ctx->decoration_manager) {
     zxdg_toplevel_decoration_v1_set_mode(
         zxdg_decoration_manager_v1_get_toplevel_decoration(

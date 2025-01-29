@@ -1277,10 +1277,9 @@ static void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
   glps_WindowManager *wm = (glps_WindowManager *)data;
 
   ssize_t window_id = __get_window_id_from_xdg_toplevel(wm, toplevel);
-  if (window_id < 0) {
-    LOG_ERROR("Window ID is invalid.");
+  if (window_id < 0)
     return;
-  }
+
   glps_WaylandWindow *window = wm->windows[window_id];
 
   if (width != 0 && height != 0) {

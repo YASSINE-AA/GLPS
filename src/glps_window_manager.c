@@ -11,85 +11,56 @@
 
 static const struct wl_callback_listener frame_callback_listener;
 
-static const struct xdg_wm_base_listener xdg_wm_base_listener = {
-    .ping = xdg_wm_base_ping,
-};
 
 
-static const struct wl_pointer_listener wl_pointer_listener = {
-    .enter = wl_pointer_enter,
-    .leave = wl_pointer_leave,
-    .motion = wl_pointer_motion,
-    .button = wl_pointer_button,
-    .axis = wl_pointer_axis,
-    .frame = wl_pointer_frame,
-    .axis_source = wl_pointer_axis_source,
-    .axis_stop = wl_pointer_axis_stop,
-    .axis_discrete = wl_pointer_axis_discrete,
-};
 
-static const struct wl_keyboard_listener wl_keyboard_listener = {
-    .keymap = wl_keyboard_keymap,
-    .enter = wl_keyboard_enter,
-    .leave = wl_keyboard_leave,
-    .key = wl_keyboard_key,
-    .modifiers = wl_keyboard_modifiers,
-    .repeat_info = wl_keyboard_repeat_info,
-};
 
-static const struct wl_touch_listener wl_touch_listener = {
-    .down = wl_touch_down,
-    .up = wl_touch_up,
-    .motion = wl_touch_motion,
-    .frame = wl_touch_frame,
-    .cancel = wl_touch_cancel,
-    .shape = wl_touch_shape,
-    .orientation = wl_touch_orientation,
-};
+
+
 static enum wl_data_device_manager_dnd_action last_dnd_action =
     WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE;
 
 
-static const struct wl_data_source_listener data_source_listener = {
-    .send = data_source_handle_send,
-    .cancelled = data_source_handle_cancelled,
-    .target = data_source_handle_target,
-    .action = data_source_handle_action,
-    .dnd_drop_performed = data_source_handle_dnd_drop_performed,
-    .dnd_finished = data_source_handle_dnd_finished,
-};
-static const struct wl_data_offer_listener data_offer_listener = {
-    .offer = data_offer_handle_offer,
-    .source_actions = data_offer_handle_source_actions,
-    .action = data_offer_handle_action,
-};
+// static const struct wl_data_source_listener data_source_listener = {
+//     .send = data_source_handle_send,
+//     .cancelled = data_source_handle_cancelled,
+//     .target = data_source_handle_target,
+//     .action = data_source_handle_action,
+//     .dnd_drop_performed = data_source_handle_dnd_drop_performed,
+//     .dnd_finished = data_source_handle_dnd_finished,
+// };
+// static const struct wl_data_offer_listener data_offer_listener = {
+//     .offer = data_offer_handle_offer,
+//     .source_actions = data_offer_handle_source_actions,
+//     .action = data_offer_handle_action,
+// };
 
-static const struct wl_data_device_listener data_device_listener = {
-    .data_offer = data_device_handle_data_offer,
-    .selection = data_device_handle_selection,
-    .enter = data_device_handle_enter,
-    .motion = data_device_handle_motion,
-    .leave = data_device_handle_leave,
-    .drop = data_device_handle_drop,
+// static const struct wl_data_device_listener data_device_listener = {
+//     .data_offer = data_device_handle_data_offer,
+//     .selection = data_device_handle_selection,
+//     .enter = data_device_handle_enter,
+//     .motion = data_device_handle_motion,
+//     .leave = data_device_handle_leave,
+//     .drop = data_device_handle_drop,
 
-};
-static const struct wl_registry_listener registry_listener = {
-    .global = handle_global,
-    .global_remove = handle_global_remove,
-};
+// };
+// static const struct wl_registry_listener registry_listener = {
+//     .global = handle_global,
+//     .global_remove = handle_global_remove,
+// };
 
 
-static const struct wl_callback_listener frame_callback_listener = {
-    .done = frame_callback_done};
+// static const struct wl_callback_listener frame_callback_listener = {
+//     .done = frame_callback_done};
 
-struct xdg_toplevel_listener toplevel_listener = {
-    .configure = handle_toplevel_configure,
-    .close = handle_toplevel_close,
-};
+// struct xdg_toplevel_listener toplevel_listener = {
+//     .configure = handle_toplevel_configure,
+//     .close = handle_toplevel_close,
+// };
 
-static const struct xdg_surface_listener xdg_surface_listener = {
-    .configure = xdg_surface_configure,
-};
+// static const struct xdg_surface_listener xdg_surface_listener = {
+//     .configure = xdg_surface_configure,
+// };
 
 
 static glps_WaylandContext *__get_wl_context(glps_WindowManager *wm)
@@ -194,6 +165,10 @@ static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
   xdg_wm_base_pong(xdg_wm_base, serial);
 }
 
+static const struct xdg_wm_base_listener xdg_wm_base_listener = {
+    .ping = xdg_wm_base_ping,
+};
+
 static void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
                              uint32_t serial, struct wl_surface *surface,
                              wl_fixed_t surface_x, wl_fixed_t surface_y)
@@ -297,6 +272,7 @@ static void wl_pointer_axis_discrete(void *data, struct wl_pointer *wl_pointer,
   context->pointer_event.axes[axis].valid = true;
   context->pointer_event.axes[axis].discrete = discrete;
 }
+
 
 static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer)
 {
@@ -411,6 +387,17 @@ static void wl_pointer_frame(void *data, struct wl_pointer *wl_pointer)
   }
   memset(event, 0, sizeof(*event));
 }
+static const struct wl_pointer_listener wl_pointer_listener = {
+    .enter = wl_pointer_enter,
+    .leave = wl_pointer_leave,
+    .motion = wl_pointer_motion,
+    .button = wl_pointer_button,
+    .axis = wl_pointer_axis,
+    .frame = wl_pointer_frame,
+    .axis_source = wl_pointer_axis_source,
+    .axis_stop = wl_pointer_axis_stop,
+    .axis_discrete = wl_pointer_axis_discrete,
+};
 
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
@@ -623,6 +610,14 @@ static void wl_keyboard_repeat_info(void *data, struct wl_keyboard *wl_keyboard,
                                     int32_t rate, int32_t delay)
 {
 }
+static const struct wl_keyboard_listener wl_keyboard_listener = {
+    .keymap = wl_keyboard_keymap,
+    .enter = wl_keyboard_enter,
+    .leave = wl_keyboard_leave,
+    .key = wl_keyboard_key,
+    .modifiers = wl_keyboard_modifiers,
+    .repeat_info = wl_keyboard_repeat_info,
+};
 
 void glps_wm_set_keyboard_enter_callback(
     glps_WindowManager *wm,
@@ -867,7 +862,15 @@ static void wl_touch_frame(void *data, struct wl_touch *wl_touch)
     point->valid = false;
   }
 }
-
+static const struct wl_touch_listener wl_touch_listener = {
+    .down = wl_touch_down,
+    .up = wl_touch_up,
+    .motion = wl_touch_motion,
+    .frame = wl_touch_frame,
+    .cancel = wl_touch_cancel,
+    .shape = wl_touch_shape,
+    .orientation = wl_touch_orientation,
+};
 void glps_wm_set_touch_callback(
     glps_WindowManager *wm,
     void (*touch_callback)(size_t window_id, int id, double touch_x,
@@ -1094,7 +1097,14 @@ static void data_offer_handle_source_actions(void *data,
     LOG_INFO("Drag supports the copy action\n");
   }
 }
-
+// static const struct wl_data_source_listener data_source_listener = {
+//     .send = data_source_handle_send,
+//     .cancelled = data_source_handle_cancelled,
+//     .target = data_source_handle_target,
+//     .action = data_source_handle_action,
+//     .dnd_drop_performed = data_source_handle_dnd_drop_performed,
+//     .dnd_finished = data_source_handle_dnd_finished,
+// };
 static void data_device_handle_drop(void *data,
                                     struct wl_data_device *data_device)
 {
@@ -1159,6 +1169,11 @@ static void data_offer_handle_action(void *data, struct wl_data_offer *offer,
   }
 }
 
+static const struct wl_data_offer_listener data_offer_listener = {
+    .offer = data_offer_handle_offer,
+    .source_actions = data_offer_handle_source_actions,
+    .action = data_offer_handle_action,
+};
 
 static void data_device_handle_data_offer(void *data,
                                           struct wl_data_device *data_device,
@@ -1276,7 +1291,14 @@ static void data_device_handle_leave(void *data,
   printf("Drag left our surface\n");
   ctx->current_drag_offer = NULL;
 }
-
+static const struct wl_data_source_listener data_source_listener = {
+    .send = data_source_handle_send,
+    .cancelled = data_source_handle_cancelled,
+    .target = data_source_handle_target,
+    .action = data_source_handle_action,
+    .dnd_drop_performed = data_source_handle_dnd_drop_performed,
+    .dnd_finished = data_source_handle_dnd_finished,
+};
 
 
 void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
@@ -1354,7 +1376,15 @@ void glps_wm_start_drag_n_drop(
                             wm->windows[origin_window_id]->wl_surface, icon,
                             wm->pointer_event.serial);
 }
+static const struct wl_data_device_listener data_device_listener = {
+    .data_offer = data_device_handle_data_offer,
+    .selection = data_device_handle_selection,
+    .enter = data_device_handle_enter,
+    .motion = data_device_handle_motion,
+    .leave = data_device_handle_leave,
+    .drop = data_device_handle_drop,
 
+};
 static void handle_global(void *data, struct wl_registry *registry, uint32_t id,
                           const char *interface, uint32_t version)
 {
@@ -1524,6 +1554,9 @@ static void frame_callback_done(void *data, struct wl_callback *callback,
   }
 }
 
+static const struct wl_callback_listener frame_callback_listener = {
+    .done = frame_callback_done};
+
 
 static void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
                                       int32_t width, int32_t height,
@@ -1671,6 +1704,10 @@ static void _init_egl(glps_WindowManager *wm)
     LOG_ERROR( "EGL error: %x", error);
   }
 }
+static const struct wl_registry_listener registry_listener = {
+    .global = handle_global,
+    .global_remove = handle_global_remove,
+};
 glps_WindowManager *glps_wm_init(void)
 {
   glps_WindowManager *wm = malloc(sizeof(glps_WindowManager));
@@ -1780,15 +1817,25 @@ void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id)
     if (error == EGL_BAD_DISPLAY)
       LOG_ERROR( "Invalid EGL display\\n");
     if (error == EGL_BAD_SURFACE)
-      LOG_ERROR(stderr, "Invalid draw or read surface\\n");
+      LOG_ERROR( "Invalid draw or read surface\\n");
     if (error == EGL_BAD_CONTEXT)
-      LOG_ERROR(stderr, "Invalid EGL context\\n");
+      LOG_ERROR( "Invalid EGL context\\n");
     if (error == EGL_BAD_MATCH)
-      LOG_ERROR(stderr, "Context or surface attributes mismatch\\n");
+      LOG_ERROR( "Context or surface attributes mismatch\\n");
     exit(EXIT_FAILURE);
   }
 }
-
+struct xdg_toplevel_listener toplevel_listener = {
+    .configure = handle_toplevel_configure,
+    .close = handle_toplevel_close,
+};
+// struct xdg_toplevel_listener toplevel_listener = {
+//     .configure = handle_toplevel_configure,
+//     .close = handle_toplevel_close,
+// };
+static const struct xdg_surface_listener xdg_surface_listener = {
+    .configure = xdg_surface_configure,
+};
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height)
 {
@@ -1855,7 +1902,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              (NativeWindowType)window->egl_window, NULL);
   if (window->egl_surface == EGL_NO_SURFACE)
   {
-    LOG_ERROR(stderr, "Failed to create EGL surface\n");
+    LOG_ERROR( "Failed to create EGL surface\n");
     exit(EXIT_FAILURE);
   }
 

@@ -203,8 +203,8 @@ typedef struct {
  */
 typedef struct {
   char title[64]; /**< Title of the window. */
-  int width;
-  int height;
+  int width ; /**< width of the window. */
+  int height; /**< height of the window. */
 } glps_WindowProperties;
 
 /**

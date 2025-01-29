@@ -1496,6 +1496,7 @@ void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height) {
   glps_WaylandWindow *window = malloc(sizeof(glps_WaylandWindow));
+
   window->specific_ogl_ctx = malloc(sizeof(glps_WindowOpenGLContext));
   window->wl_surface =
       wl_compositor_create_surface(wm->wayland_ctx->wl_compositor);
@@ -1525,6 +1526,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   }
 
   xdg_toplevel_set_title(window->xdg_toplevel, title);
+  // setting window property  
   strcpy(window->properties.title, title);
   xdg_toplevel_add_listener(window->xdg_toplevel, &toplevel_listener, wm);
   if (wm->wayland_ctx->decoration_manager) {
@@ -1538,7 +1540,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
 
   wl_display_roundtrip(wm->wayland_ctx->wl_display);
 
-  window->egl_window = wl_egl_window_create(window->wl_surface, 640, 480);
+  window->egl_window = wl_egl_window_create(window->wl_surface, window->properties.width,   window->properties.height);
   if (!window->egl_window) {
     fprintf(stderr, "Failed to create EGL window\n");
     exit(EXIT_FAILURE);

@@ -27,8 +27,37 @@ glps_WindowManager *glps_wm_init(void);
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height);
 
-void glps_wm_window_resize(glps_WindowManager *wm, size_t window_id, int width,
-                     int height, int dx, int dy);
+/**
+ * @brief Gets dimensions of a window.
+ * @param wm Pointer to the GLPS Window Manager.
+ * @param window_id ID of the window to get dimensions of.
+ * @param width Window width pointer.
+ * @param height Window height pointer.
+ */
+void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
+                                   int *width, int *height);
+
+/**
+ * @brief Allows user to set callback to handle window resize.
+ * @param wm Pointer to the GLPS Window Manager.
+ * @param window_resize_callback user-set window resize callback.
+ * @param data Additional data to pass to the callback.
+ */
+void glps_wm_window_set_resize_callback(
+    glps_WindowManager *wm,
+    void (*window_resize_callback)(size_t window_id, int width, int height,
+                                   void *data),
+    void *data);
+
+/**
+ * @brief Allows user to set callback to handle window resize.
+ * @param wm Pointer to the GLPS Window Manager.
+ * @param window_close_callback user-set window close callback.
+ * @param data Additional data to pass to the callback.
+ */
+void glps_wm_window_set_close_callback(
+    glps_WindowManager *wm,
+    void (*window_close_callback)(size_t window_id, void *data), void *data);
 
 /**
  * @brief Sets the OpenGL context of a specific window as the current context.

@@ -67,7 +67,7 @@ void keyboard_enter_callback() { LOG_INFO("keyboard entered."); }
 
 void keyboard_callback(size_t window_id, bool state, const char *value,
                        void *data) {
-  LOG_INFO("window %ld state: %d value:%s",window_id, state, value);
+  LOG_INFO("window %ld state: %d value:%s", window_id, state, value);
   char buff[1024];
   glps_wm_get_from_clipboard(wm, buff, 1024);
   LOG_INFO("Clipboard content is: %s", buff);
@@ -77,12 +77,36 @@ void keyboard_leave_callback(size_t window_id, void *data) {
   LOG_INFO("keyboard left.");
 }
 
+void render_frame(glps_WindowManager *wm, size_t window_id) {
+  glps_wm_set_window_ctx_curr(wm, window_id);
+  int width, height;
+  glps_wm_window_get_dimensions(wm, window_id, &width, &height);
+  glViewport(0, 0, width, height);
+  glps_clear(wm);
+  glps_opengl_set_text_projection(wm, window_id);
+  glps_opengl_fill_rectangle(wm, window_id, 10, 110, 100, 100, 0xFF0000);
+  glps_opengl_draw_text(wm, window_id, 20, 50, "test", 0.3f, 0x000000);
+  glps_wm_swap_buffers(wm, window_id);
+  glps_wm_update(wm, window_id);
+}
+
+void window_resize_callback(size_t window_id, int width, int height,
+                            void *data) {
+  glps_WindowManager *wm = (glps_WindowManager *)data;
+  render_frame(wm, window_id);
+}
+
+void window_close_callback(size_t window_id, void *data) {
+  glps_WindowManager *wm = (glps_WindowManager *)data;
+  glps_wm_window_destroy(wm, window_id);
+}
+
 int main(int argc, char *argv[]) {
 
   wm = glps_wm_init();
 
-  glps_wm_window_create(wm, "test window", 0, 0);
- // glps_wm_window_create(wm, "test window", 0, 0);
+  glps_wm_window_create(wm, "test window", 640, 480);
+  glps_wm_window_create(wm, "test window 2", 800, 800);
 
   /* ================== CALLBACK SETUPS ================== */
   glps_wm_set_keyboard_callback(wm, keyboard_callback, (void *)wm);
@@ -93,20 +117,17 @@ int main(int argc, char *argv[]) {
   glps_wm_set_keyboard_leave_callback(wm, keyboard_leave_callback, (void *)wm);
   glps_wm_set_keyboard_enter_callback(wm, keyboard_enter_callback, (void *)wm);
   glps_wm_set_scroll_callback(wm, mouse_scroll_callback, (void *)wm);
+  glps_wm_window_set_resize_callback(wm, window_resize_callback, (void *)wm);
+  glps_wm_window_set_close_callback(wm, window_close_callback, (void *)wm);
   /* ====================================================== */
 
   glps_ft_init(wm, "./roboto.ttf");
+
   for (size_t i = 0; i < wm->window_count; ++i) {
-    glps_wm_set_window_ctx_curr(wm, i);
-    glps_clear(wm);
-    glps_opengl_set_text_projection(wm, i);
-    glps_opengl_fill_rectangle(wm, i, 10, 110, 100, 100, 0xFF0000);
-    // glps_opengl_draw_window_borders(wm, i, 0xD3D3D3);
-    glps_opengl_draw_text(wm, i, 20, 50, "test", 0.3f, 0x000000);
-    glps_wm_swap_buffers(wm, i);
-    glps_wm_update(wm, i);
+    render_frame(wm, i);
   }
-  glps_wm_start_drag_n_drop(wm, 0, drag_n_drop_callback, NULL);
+
+  // glps_wm_start_drag_n_drop(wm, 0, drag_n_drop_callback, NULL);
 
   glps_wm_run(wm);
 

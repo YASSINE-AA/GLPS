@@ -69,27 +69,6 @@ __get_window_id_from_xdg_toplevel(glps_WindowManager *wm,
   return -1;
 }
 
-void glps_wm_window_resize(glps_WindowManager *wm, size_t window_id, int width,
-                           int height, int dx, int dy) {
-  if (wm == NULL) {
-    LOG_ERROR("Couldn't resize window. Window Manager is NULL.");
-    return;
-  }
-
-  glps_WaylandContext *ctx = __get_wl_context(wm);
-
-  if (ctx == NULL) {
-    LOG_ERROR("Couldn't resize window. Wayland Context is NULL.");
-    return;
-  }
-
-  // wl_egl_window_resize(wm->windows[window_id]->egl_surface, width, height,
-  // dx,
-  //                     dy);
-  xdg_toplevel_resize(wm->windows[window_id]->xdg_toplevel, ctx->wl_seat,
-                      wm->windows[window_id]->serial, 10);
-}
-
 static void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
                              uint32_t serial) {
   xdg_wm_base_pong(xdg_wm_base, serial);
@@ -1247,20 +1226,21 @@ void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
 static void frame_callback_done(void *data, struct wl_callback *callback,
                                 uint32_t time) {
   frame_callback_args *args = (frame_callback_args *)data;
-  struct wl_surface *surface = args->wl_surface;
-
-  if (!args)
-    exit(EXIT_FAILURE);
-
-  printf("called \n");
-  // TODO: render(args->window_id);
+  glps_WaylandWindow *window =
+      (glps_WaylandWindow *)args->wm->windows[args->window_id];
 
   if (callback) {
     wl_callback_destroy(callback);
   }
 
-  if (surface) {
-    struct wl_callback *new_callback = wl_surface_frame(surface);
+  if (args->wm->callbacks.window_resize_callback) {
+    args->wm->callbacks.window_resize_callback(
+        args->window_id, window->properties.width, window->properties.height,
+        args->wm->callbacks.window_resize_data);
+  }
+
+  if (window->wl_surface) {
+    struct wl_callback *new_callback = wl_surface_frame(window->wl_surface);
     if (new_callback) {
 
       wl_callback_add_listener(new_callback, &frame_callback_listener, args);
@@ -1270,6 +1250,34 @@ static void frame_callback_done(void *data, struct wl_callback *callback,
 
 static const struct wl_callback_listener frame_callback_listener = {
     .done = frame_callback_done};
+
+void glps_wm_window_set_resize_callback(
+    glps_WindowManager *wm,
+    void (*window_resize_callback)(size_t window_id, int width, int height,
+                                   void *data),
+    void *data) {
+
+  if (wm == NULL) {
+    LOG_ERROR("Window Manager is NULL.");
+    return;
+  }
+
+  wm->callbacks.window_resize_callback = window_resize_callback;
+  wm->callbacks.window_resize_data = data;
+}
+
+void glps_wm_window_set_close_callback(
+    glps_WindowManager *wm,
+    void (*window_close_callback)(size_t window_id, void *data), void *data) {
+
+  if (wm == NULL) {
+    LOG_ERROR("Window Manager is NULL.");
+    return;
+  }
+
+  wm->callbacks.window_close_callback = window_close_callback;
+  wm->callbacks.window_close_data = data;
+}
 
 static void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
                                       int32_t width, int32_t height,
@@ -1286,9 +1294,30 @@ static void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
     window->properties.height = height;
     window->properties.width = width;
   }
+
+  wl_egl_window_resize(window->egl_window, width, height, 0, 0);
+
+  glps_wm_update(wm, window_id); // send update.
 }
 
-static void handle_toplevel_close() { LOG_ERROR("Window closed."); }
+static void handle_toplevel_close(void *data, struct xdg_toplevel *toplevel) {
+  glps_WindowManager *wm = (glps_WindowManager *)data;
+  if (wm == NULL) {
+    LOG_ERROR("Window Manager is NULL. Can't close window.");
+    return;
+  }
+
+  ssize_t window_id = __get_window_id_from_xdg_toplevel(wm, toplevel);
+  if (window_id < 0) {
+    LOG_ERROR("Invalid Window ID. Can't close window.");
+    return;
+  }
+
+  if (wm->callbacks.window_close_callback) {
+    wm->callbacks.window_close_callback((size_t)window_id,
+                                        wm->callbacks.window_close_data);
+  }
+}
 
 struct xdg_toplevel_listener toplevel_listener = {
     .configure = handle_toplevel_configure,
@@ -1493,6 +1522,25 @@ void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
   }
 }
 
+void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
+                                   int *width, int *height) {
+
+  if (wm == NULL) {
+    LOG_ERROR("Couldn't get window dimensions. Window Manager NULL. ");
+    return;
+  }
+
+  if (window_id > wm->window_count) {
+    LOG_ERROR("Couldn't get window dimensions. Invalid Window ID.");
+    return;
+  }
+
+  glps_WaylandWindow *window = (glps_WaylandWindow *)wm->windows[window_id];
+
+  *width = window->properties.width;
+  *height = window->properties.height;
+}
+
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height) {
   glps_WaylandWindow *window = malloc(sizeof(glps_WaylandWindow));
@@ -1503,6 +1551,9 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
     fprintf(stderr, "Failed to create wayland surface\n");
     exit(EXIT_FAILURE);
   }
+
+  window->properties.width = width;
+  window->properties.height = height;
 
   window->xdg_surface = xdg_wm_base_get_xdg_surface(
       wm->wayland_ctx->xdg_wm_base, window->wl_surface);
@@ -1538,7 +1589,8 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
 
   wl_display_roundtrip(wm->wayland_ctx->wl_display);
 
-  window->egl_window = wl_egl_window_create(window->wl_surface, 640, 480);
+  window->egl_window = wl_egl_window_create(
+      window->wl_surface, window->properties.width, window->properties.height);
   if (!window->egl_window) {
     fprintf(stderr, "Failed to create EGL window\n");
     exit(EXIT_FAILURE);
@@ -1567,10 +1619,10 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   frame_callback_args *frame_args =
       (frame_callback_args *)malloc(sizeof(frame_callback_args));
   struct wl_callback *callback = wl_surface_frame(window->wl_surface);
-  frame_args->wl_surface = window->wl_surface;
+  frame_args->wm = wm;
   frame_args->window_id = wm->window_count;
+
   wl_callback_add_listener(callback, &frame_callback_listener, frame_args);
-  window->frame_arg = frame_args;
 
   return wm->window_count++;
 }
@@ -1589,11 +1641,6 @@ static void _cleanup_wl(glps_WindowManager *wm) {
       if (wm->windows[i]->xdg_toplevel) {
         xdg_toplevel_destroy(wm->windows[i]->xdg_toplevel);
         wm->windows[i]->xdg_toplevel = NULL;
-      }
-
-      if (wm->windows[i]->frame_arg) {
-        free(wm->windows[i]->frame_arg);
-        wm->windows[i]->frame_arg = NULL;
       }
 
       free(wm->windows[i]);
@@ -1650,7 +1697,23 @@ static void _cleanup_egl(glps_WindowManager *wm) {
 }
 
 void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
-  // TODO implement this.
+  glps_WaylandWindow *window = wm->windows[window_id];
+
+  eglDestroySurface(wm->egl_ctx->dpy, window->egl_surface);
+  wl_egl_window_destroy(window->egl_window);
+
+  xdg_toplevel_destroy(window->xdg_toplevel);
+  xdg_surface_destroy(window->xdg_surface);
+  wl_surface_destroy(window->wl_surface);
+
+  free(window->specific_ogl_ctx);
+
+  free(window);
+
+  for (size_t i = window_id; i < wm->window_count - 1; i++) {
+    wm->windows[i] = wm->windows[i + 1];
+  }
+  wm->window_count--;
 }
 
 void glps_wm_destroy(glps_WindowManager *wm) {

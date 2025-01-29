@@ -146,15 +146,6 @@ struct touch_event {
 };
 
 /**
- * @struct frame_callback_args
- * @brief Arguments for frame callbacks.
- */
-typedef struct {
-  struct wl_surface *wl_surface; /**< Wayland surface. */
-  size_t window_id;              /**< ID of the window. */
-} frame_callback_args;
-
-/**
  * @enum GLPS_RENDER_API
  * @brief Rendering API types.
  */
@@ -214,7 +205,6 @@ typedef struct {
 typedef struct {
   struct xdg_surface *xdg_surface;   /**< XDG surface. */
   struct xdg_toplevel *xdg_toplevel; /**< XDG toplevel. */
-  frame_callback_args *frame_arg;    /**< Frame callback arguments. */
   struct wl_surface *wl_surface;     /**< Wayland surface. */
   glps_WindowOpenGLContext
       *specific_ogl_ctx;  /**< OpenGL context specific to the window. */
@@ -296,8 +286,12 @@ struct glps_Callback {
                          void *data); /**< Callback for touch events. */
   void (*drag_n_drop_callback)(
       size_t window_id, char *mime, char *buff,
-      void *data); /**< Callback fro drag & drop events. */
-
+      void *data); /**< Callback for drag & drop events. */
+  void (*window_resize_callback)(
+      size_t window_id, int width, int height,
+      void *data); /**< Callback for resize events. */
+  void (*window_close_callback)(
+      size_t window_id, void *data); /**< Callback for window close event. */
   void *mouse_enter_data;
   void *mouse_leave_data;
   void *mouse_move_data;
@@ -308,6 +302,8 @@ struct glps_Callback {
   void *keyboard_data;
   void *touch_data;
   void *drag_n_drop_data;
+  void *window_resize_data;
+  void *window_close_data;
 };
 
 /**
@@ -329,5 +325,14 @@ typedef struct {
   struct glps_Callback callbacks;
 
 } glps_WindowManager;
+
+/**
+ * @struct frame_callback_args
+ * @brief Arguments for frame callbacks.
+ */
+typedef struct {
+  glps_WindowManager *wm; /**< Window Manager. */
+  size_t window_id;       /**< ID of the window. */
+} frame_callback_args;
 
 #endif // GLPS_COMMON_H

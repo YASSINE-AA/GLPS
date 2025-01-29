@@ -27,8 +27,6 @@ void glps_opengl_init(glps_WindowManager *wm) {
     fprintf(stderr, "Failed to initialize GLAD\n");
     exit(EXIT_FAILURE);
   }
-
-  // Freetype init
 }
 
 void glps_opengl_setup_shared(glps_WindowManager *wm) {
@@ -174,8 +172,12 @@ void glps_opengl_draw_rectangle(glps_WindowManager *wm, size_t window_id, int x,
   float ndc_width, ndc_height;
   vec3 color_rgb;
 
-  convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, 640, 480);
-  convert_dimension_to_ndc(&ndc_width, &ndc_height, width, height, 640, 480);
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
+
+  convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, window_width, window_height);
+  convert_dimension_to_ndc(&ndc_width, &ndc_height, width, height, window_width,
+                           window_height);
   convert_hex_to_rgb(&color_rgb, color);
 
   Vertex vertices[4];
@@ -212,8 +214,12 @@ void glps_opengl_fill_rectangle(glps_WindowManager *wm, size_t window_id, int x,
   float ndc_width, ndc_height;
   vec3 color_rgb;
 
-  convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, 640, 480);
-  convert_dimension_to_ndc(&ndc_width, &ndc_height, width, height, 640, 480);
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
+
+  convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, window_width, window_height);
+  convert_dimension_to_ndc(&ndc_width, &ndc_height, width, height, window_width,
+                           window_height);
   convert_hex_to_rgb(&color_rgb, color);
 
   Vertex vertices[6];
@@ -253,8 +259,11 @@ void glps_opengl_draw_line(glps_WindowManager *wm, size_t window_id, int x1,
   float ndc_x2, ndc_y2;
   vec3 color_rgb;
 
-  convert_coords_to_ndc(&ndc_x1, &ndc_y1, x1, y1, 640, 480);
-  convert_coords_to_ndc(&ndc_x2, &ndc_y2, x2, y2, 640, 480);
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
+
+  convert_coords_to_ndc(&ndc_x1, &ndc_y1, x1, y1, window_width, window_height);
+  convert_coords_to_ndc(&ndc_x2, &ndc_y2, x2, y2, window_width, window_height);
 
   convert_hex_to_rgb(&color_rgb, color);
 
@@ -285,8 +294,12 @@ void glps_opengl_fill_circle(glps_WindowManager *wm, size_t window_id,
   const int segments = 10;
 
   float ndc_x_center, ndc_y_center;
-  convert_coords_to_ndc(&ndc_x_center, &ndc_y_center, x_center, y_center, 640,
-                        480);
+
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
+
+  convert_coords_to_ndc(&ndc_x_center, &ndc_y_center, x_center, y_center,
+                        window_width, window_height);
 
   vec3 color_rgb;
   convert_hex_to_rgb(&color_rgb, color);
@@ -305,7 +318,7 @@ void glps_opengl_fill_circle(glps_WindowManager *wm, size_t window_id,
     float y = y_center + (height * 0.5f * sinf(angle));
 
     float ndc_x, ndc_y;
-    convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, 640, 480);
+    convert_coords_to_ndc(&ndc_x, &ndc_y, x, y, window_width, window_height);
 
     vertices[i + 1].pos[0] = ndc_x;
     vertices[i + 1].pos[1] = ndc_y;
@@ -373,8 +386,12 @@ int glps_ft_init(glps_WindowManager *wm, const char *font_path) {
 }
 
 void glps_opengl_set_text_projection(glps_WindowManager *wm, size_t window_id) {
+
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
+
   mat4x4 projection;
-  mat4x4_ortho(projection, 0.0f, 640, 480, 0.0f, -1.0f, 1.0f);
+  mat4x4_ortho(projection, 0.0f, window_width, window_height, 0.0f, -1.0f, 1.0f);
   glUseProgram(wm->windows[window_id]->specific_ogl_ctx->text_program);
   glUniformMatrix4fv(
       glGetUniformLocation(
@@ -389,7 +406,8 @@ void glps_opengl_draw_text(glps_WindowManager *wm, size_t window_id, int x,
 
   vec3 color_rgb;
   float ndc_x, ndc_y;
-  int window_width = 640, window_height = 480;
+  int window_width = wm->windows[window_id]->properties.width,
+      window_height = wm->windows[window_id]->properties.height;
 
   int initial_x = x;
 
@@ -477,8 +495,8 @@ void glps_opengl_draw_text(glps_WindowManager *wm, size_t window_id, int x,
 
 void glps_opengl_draw_window_borders(glps_WindowManager *wm, size_t window_id,
                                      unsigned int color) {
-  int window_width = 640;
-  int window_height = 480;
+  int window_width = wm->windows[window_id]->properties.width;
+  int window_height = wm->windows[window_id]->properties.height;
 
   // Top border
   glps_opengl_fill_rectangle(wm, window_id, 0, 40, window_width, 40, color);

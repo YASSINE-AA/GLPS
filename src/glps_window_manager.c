@@ -1229,6 +1229,10 @@ static void frame_callback_done(void *data, struct wl_callback *callback,
   glps_WaylandWindow *window =
       (glps_WaylandWindow *)args->wm->windows[args->window_id];
 
+  if (window == NULL) {
+    return;
+  }
+
   if (callback) {
     wl_callback_destroy(callback);
   }
@@ -1578,10 +1582,13 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   xdg_toplevel_set_title(window->xdg_toplevel, title);
   strcpy(window->properties.title, title);
   xdg_toplevel_add_listener(window->xdg_toplevel, &toplevel_listener, wm);
-  if (wm->wayland_ctx->decoration_manager) {
-    zxdg_toplevel_decoration_v1_set_mode(
+  if (wm->wayland_ctx->decoration_manager != NULL) {
+
+    wm->wayland_ctx->zxdg_toplevel_decoration =
         zxdg_decoration_manager_v1_get_toplevel_decoration(
-            wm->wayland_ctx->decoration_manager, window->xdg_toplevel),
+            wm->wayland_ctx->decoration_manager, window->xdg_toplevel);
+    zxdg_toplevel_decoration_v1_set_mode(
+        wm->wayland_ctx->zxdg_toplevel_decoration,
         ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
   }
 
@@ -1621,6 +1628,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   struct wl_callback *callback = wl_surface_frame(window->wl_surface);
   frame_args->wm = wm;
   frame_args->window_id = wm->window_count;
+  window->frame_args = (void *)frame_args;
 
   wl_callback_add_listener(callback, &frame_callback_listener, frame_args);
 
@@ -1650,22 +1658,65 @@ static void _cleanup_wl(glps_WindowManager *wm) {
   free(wm->windows);
   wm->windows = NULL;
 
-  if (wm->wayland_ctx) {
-    if (wm->wayland_ctx->wl_seat) {
+  if (wm->wayland_ctx != NULL) {
+    if (wm->wayland_ctx->wl_seat != NULL) {
       wl_seat_destroy(wm->wayland_ctx->wl_seat);
     }
-    if (wm->wayland_ctx->xdg_wm_base) {
+    if (wm->wayland_ctx->xdg_wm_base != NULL) {
       xdg_wm_base_destroy(wm->wayland_ctx->xdg_wm_base);
     }
-    if (wm->wayland_ctx->decoration_manager) {
+    if (wm->wayland_ctx->decoration_manager != NULL) {
       //   zxdg_decoration_manager_v1_destroy(wm->wayland_ctx->decoration_manager);
     }
-    if (wm->wayland_ctx->wl_compositor) {
+
+    if (wm->wayland_ctx->zxdg_toplevel_decoration != NULL) {
+      zxdg_toplevel_decoration_v1_destroy(
+          wm->wayland_ctx->zxdg_toplevel_decoration);
+      wm->wayland_ctx->zxdg_toplevel_decoration = NULL;
+    }
+    if (wm->wayland_ctx->wl_compositor != NULL) {
       wl_compositor_destroy(wm->wayland_ctx->wl_compositor);
+      wm->wayland_ctx->wl_compositor = NULL;
     }
-    if (wm->wayland_ctx->wl_registry) {
+    if (wm->wayland_ctx->wl_registry != NULL) {
       wl_registry_destroy(wm->wayland_ctx->wl_registry);
+      wm->wayland_ctx->wl_registry = NULL;
     }
+    if (wm->wayland_ctx->data_dvc != NULL) {
+      wl_data_device_destroy(wm->wayland_ctx->data_dvc);
+      wm->wayland_ctx->data_dvc = NULL;
+    }
+    if (wm->wayland_ctx->wl_keyboard != NULL) {
+      wl_keyboard_destroy(wm->wayland_ctx->wl_keyboard);
+      wm->wayland_ctx->wl_keyboard = NULL;
+    }
+
+    if (wm->wayland_ctx->wl_touch != NULL) {
+      wl_touch_destroy(wm->wayland_ctx->wl_touch);
+      wm->wayland_ctx->wl_keyboard = NULL;
+    }
+
+    if (wm->wayland_ctx->xkb_keymap != NULL) {
+      free(wm->wayland_ctx->xkb_keymap);
+      wm->wayland_ctx->xkb_keymap = NULL;
+    }
+
+    if (wm->wayland_ctx->xkb_state != NULL) {
+      free(wm->wayland_ctx->xkb_state);
+      wm->wayland_ctx->xkb_state = NULL;
+    }
+
+    if (wm->wayland_ctx->xkb_context != NULL) {
+      xkb_context_unref(wm->wayland_ctx->xkb_context);
+      free(wm->wayland_ctx->xkb_context);
+      wm->wayland_ctx->xkb_context = NULL;
+    }
+
+    if (wm->wayland_ctx->data_dvc_manager != NULL) {
+      wl_data_device_manager_destroy(wm->wayland_ctx->data_dvc_manager);
+      wm->wayland_ctx->data_dvc_manager = NULL;
+    }
+
     glps_display_disconnect(wm);
     free(wm->wayland_ctx);
     wm->wayland_ctx = NULL;
@@ -1673,16 +1724,6 @@ static void _cleanup_wl(glps_WindowManager *wm) {
 }
 
 static void _cleanup_egl(glps_WindowManager *wm) {
-  for (size_t i = 0; i < wm->window_count; ++i) {
-    if (wm->windows[i]->egl_surface) {
-      eglDestroySurface(wm->egl_ctx->dpy, wm->windows[i]->egl_surface);
-      wm->windows[i]->egl_surface = NULL;
-    }
-    if (wm->windows[i]->egl_window) {
-      wl_egl_window_destroy(wm->windows[i]->egl_window);
-      wm->windows[i]->egl_window = NULL;
-    }
-  }
 
   if (wm->egl_ctx->ctx) {
     eglDestroyContext(wm->egl_ctx->dpy, wm->egl_ctx->ctx);
@@ -1697,6 +1738,12 @@ static void _cleanup_egl(glps_WindowManager *wm) {
 }
 
 void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
+  if (wm == NULL || window_id >= wm->window_count ||
+      wm->windows[window_id] == NULL) {
+    LOG_ERROR("Invalid window ID or window manager is NULL.");
+    return;
+  }
+
   glps_WaylandWindow *window = wm->windows[window_id];
 
   eglDestroySurface(wm->egl_ctx->dpy, window->egl_surface);
@@ -1707,20 +1754,38 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
   wl_surface_destroy(window->wl_surface);
 
   free(window->specific_ogl_ctx);
-
   free(window);
 
-  for (size_t i = window_id; i < wm->window_count - 1; i++) {
+  wm->windows[window_id] = NULL;
+
+  for (size_t i = window_id; i < wm->window_count - 1; ++i) {
     wm->windows[i] = wm->windows[i + 1];
   }
-  wm->window_count--;
+  if (wm->window_count > 0)
+    wm->window_count--;
+
+  if (wm->window_count == 0) {
+    LOG_INFO("All windows destroyed. Exiting program.");
+    glps_wm_destroy(wm);
+    exit(EXIT_SUCCESS);
+  }
 }
 
 void glps_wm_destroy(glps_WindowManager *wm) {
+
+  if (wm == NULL) {
+    return;
+  }
+
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (wm->windows[i] != NULL) {
+      glps_wm_window_destroy(wm, i);
+    }
+  }
   glps_opengl_cleanup(wm);
   _cleanup_egl(wm);
   _cleanup_wl(wm);
-  if (wm) {
+  if (wm != NULL) {
     free(wm);
     wm = NULL;
   }

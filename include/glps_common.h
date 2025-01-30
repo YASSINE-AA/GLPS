@@ -33,7 +33,7 @@
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <wayland-egl.h>
-
+#define MAX_WINDOWS 100
 /**
  * @struct Character
  * @brief Represents an individual character's rendering data.
@@ -212,7 +212,7 @@ typedef struct {
   struct wl_egl_window *egl_window; /**< Wayland EGL window. */
   glps_WindowProperties properties; /**< Window properties. */
   struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration;
-  struct wl_callback* frame_callback;
+  struct wl_callback *frame_callback;
   void *frame_args;
   uint32_t serial;
 } glps_WaylandWindow;

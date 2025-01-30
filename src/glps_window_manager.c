@@ -1399,39 +1399,39 @@ static void _init_egl(glps_WindowManager *wm) {
   assert(wm->egl_ctx->dpy);
 
   if (!eglInitialize(wm->egl_ctx->dpy, &major, &minor)) {
-    fprintf(stderr, "Failed to initialize EGL\n");
+    LOG_ERROR("Failed to initialize EGL");
     exit(EXIT_FAILURE);
   }
 
-  printf("EGL initialized successfully (version %d.%d)\n", major, minor);
+  LOG_INFO("EGL initialized successfully (version %d.%d)", major, minor);
 
   if (!eglChooseConfig(wm->egl_ctx->dpy, config_attribs, &wm->egl_ctx->conf, 1,
                        &n) ||
       n != 1) {
-    fprintf(stderr, "Failed to choose a valid EGL config\n");
+    LOG_ERROR("Failed to choose a valid EGL config");
     exit(EXIT_FAILURE);
   }
 
   if (!eglBindAPI(EGL_OPENGL_API)) {
-    fprintf(stderr, "Failed to bind OpenGL API\n");
+    LOG_ERROR("Failed to bind OpenGL API");
     exit(EXIT_FAILURE);
   }
   EGLint error = eglGetError();
   if (error != EGL_SUCCESS) {
-    fprintf(stderr, "EGL error: %x\n", error);
+    LOG_ERROR("EGL error: %x", error);
   }
 }
 glps_WindowManager *glps_wm_init(void) {
   glps_WindowManager *wm = malloc(sizeof(glps_WindowManager));
   *wm = (glps_WindowManager){0};
   if (!wm) {
-    fprintf(stderr, "Failed to allocate memory for glps_WindowManager\n");
+    LOG_ERROR("Failed to allocate memory for glps_WindowManager");
     return NULL;
   }
 
-  wm->windows = malloc(sizeof(glps_WaylandWindow *) * 100);
+  wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
   if (!wm->windows) {
-    fprintf(stderr, "Failed to allocate memory for windows array\n");
+    LOG_ERROR("Failed to allocate memory for windows array");
     free(wm);
     return NULL;
   }
@@ -1439,7 +1439,7 @@ glps_WindowManager *glps_wm_init(void) {
   wm->wayland_ctx = malloc(sizeof(glps_WaylandContext));
   *wm->wayland_ctx = (glps_WaylandContext){0};
   if (!wm->wayland_ctx) {
-    fprintf(stderr, "Failed to allocate memory for Wayland context\n");
+    LOG_ERROR("Failed to allocate memory for Wayland context");
     free(wm->windows);
     free(wm);
     return NULL;
@@ -1457,7 +1457,7 @@ glps_WindowManager *glps_wm_init(void) {
 
   wm->wayland_ctx->wl_display = wl_display_connect(NULL);
   if (!wm->wayland_ctx->wl_display) {
-    fprintf(stderr, "Failed to connect to Wayland display\n");
+    LOG_ERROR("Failed to connect to Wayland display");
     free(wm->shared_ogl_ctx);
     free(wm->wayland_ctx);
     free(wm->windows);
@@ -1468,7 +1468,7 @@ glps_WindowManager *glps_wm_init(void) {
   wm->wayland_ctx->wl_registry =
       wl_display_get_registry(wm->wayland_ctx->wl_display);
   if (!wm->wayland_ctx->wl_registry) {
-    fprintf(stderr, "Failed to get Wayland registry\n");
+    LOG_ERROR("Failed to get Wayland registry");
     wl_display_disconnect(wm->wayland_ctx->wl_display);
     free(wm->shared_ogl_ctx);
     free(wm->wayland_ctx);
@@ -1486,15 +1486,15 @@ glps_WindowManager *glps_wm_init(void) {
     xdg_wm_base_add_listener(wm->wayland_ctx->xdg_wm_base,
                              &xdg_wm_base_listener, NULL);
   } else {
-    fprintf(stderr, "xdg_wm_base protocol not supported by compositor\n");
+    LOG_ERROR("xdg_wm_base protocol not supported by compositor");
   }
 
   if (!wm->wayland_ctx->decoration_manager) {
-    fprintf(stderr, "xdg-decoration protocol not supported by compositor\n");
+    LOG_ERROR("xdg-decoration protocol not supported by compositor");
   }
 
   if (!wm->wayland_ctx->wl_compositor || !wm->wayland_ctx->xdg_wm_base) {
-    fprintf(stderr, "Failed to retrieve Wayland compositor or xdg_wm_base\n");
+    LOG_ERROR("Failed to retrieve Wayland compositor or xdg_wm_base");
     wl_registry_destroy(wm->wayland_ctx->wl_registry);
     wl_display_disconnect(wm->wayland_ctx->wl_display);
     free(wm->shared_ogl_ctx);
@@ -1513,15 +1513,15 @@ void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
   if (!eglMakeCurrent(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface,
                       wm->windows[window_id]->egl_surface, wm->egl_ctx->ctx)) {
     EGLint error = eglGetError();
-    fprintf(stderr, "eglMakeCurrent failed: 0x%x\\n", error);
+    LOG_ERROR("eglMakeCurrent failed: 0x%x", error);
     if (error == EGL_BAD_DISPLAY)
-      fprintf(stderr, "Invalid EGL display\\n");
+      LOG_ERROR("Invalid EGL display");
     if (error == EGL_BAD_SURFACE)
-      fprintf(stderr, "Invalid draw or read surface\\n");
+      LOG_ERROR("Invalid draw or read surface");
     if (error == EGL_BAD_CONTEXT)
-      fprintf(stderr, "Invalid EGL context\\n");
+      LOG_ERROR("Invalid EGL context");
     if (error == EGL_BAD_MATCH)
-      fprintf(stderr, "Context or surface attributes mismatch\\n");
+      LOG_ERROR("Context or surface attributes mismatch");
     exit(EXIT_FAILURE);
   }
 }
@@ -1547,7 +1547,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   window->wl_surface =
       wl_compositor_create_surface(wm->wayland_ctx->wl_compositor);
   if (!window->wl_surface) {
-    fprintf(stderr, "Failed to create wayland surface\n");
+    LOG_ERROR("Failed to create wayland surface");
     exit(EXIT_FAILURE);
   }
 
@@ -1558,19 +1558,19 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
       wm->wayland_ctx->xdg_wm_base, window->wl_surface);
 
   if (!window->xdg_surface) {
-    fprintf(stderr, "Failed to create XDG surface\n");
+    LOG_ERROR("Failed to create XDG surface");
     exit(EXIT_FAILURE);
   }
 
   if (xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener,
                                wm) == -1) {
-    fprintf(stderr, "Failed to add XDG surface listener\n");
+    LOG_ERROR("Failed to add XDG surface listener");
     exit(EXIT_FAILURE);
   }
 
   window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
   if (!window->xdg_toplevel) {
-    fprintf(stderr, "Failed to create toplevel\n");
+    LOG_ERROR("Failed to create toplevel");
     exit(EXIT_FAILURE);
   }
 
@@ -1594,7 +1594,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   window->egl_window = wl_egl_window_create(
       window->wl_surface, window->properties.width, window->properties.height);
   if (!window->egl_window) {
-    fprintf(stderr, "Failed to create EGL window\n");
+    LOG_ERROR("Failed to create EGL window");
     exit(EXIT_FAILURE);
   }
 
@@ -1602,7 +1602,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
       eglCreateWindowSurface(wm->egl_ctx->dpy, wm->egl_ctx->conf,
                              (NativeWindowType)window->egl_window, NULL);
   if (window->egl_surface == EGL_NO_SURFACE) {
-    fprintf(stderr, "Failed to create EGL surface\n");
+    LOG_ERROR("Failed to create EGL surface");
     exit(EXIT_FAILURE);
   }
 
@@ -1693,7 +1693,6 @@ static void _cleanup_wl(glps_WindowManager *wm) {
     }
 
     if (wm->wayland_ctx->xkb_keymap != NULL) {
-      LOG_CRITICAL("freeing xkb_keymap");
       xkb_keymap_unref(wm->wayland_ctx->xkb_keymap);
       wm->wayland_ctx->xkb_keymap = NULL;
     }

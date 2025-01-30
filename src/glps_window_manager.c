@@ -1067,12 +1067,12 @@ void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
   memset(&wm->clipboard, 0, sizeof(wm->clipboard));
   strcat(wm->clipboard.buff, data);
   strcat(wm->clipboard.mime_type, mime);
-  struct wl_data_source *source =
+  context->data_src =
       wl_data_device_manager_create_data_source(context->data_dvc_manager);
-  wl_data_source_add_listener(source, &data_source_listener, wm);
-  wl_data_source_offer(source, "text/plain");
-  wl_data_source_offer(source, "text/html");
-  wl_data_device_set_selection(context->data_dvc, source,
+  wl_data_source_add_listener(context->data_src, &data_source_listener, wm);
+  wl_data_source_offer(context->data_src, "text/plain");
+  wl_data_source_offer(context->data_src, "text/html");
+  wl_data_device_set_selection(context->data_dvc, context->data_src,
                                context->keyboard_serial);
 }
 
@@ -1711,6 +1711,11 @@ static void _cleanup_wl(glps_WindowManager *wm) {
       wl_data_device_manager_destroy(wm->wayland_ctx->data_dvc_manager);
       wm->wayland_ctx->data_dvc_manager = NULL;
     }
+    if (wm->wayland_ctx->data_src != NULL) {
+      wl_data_source_destroy(wm->wayland_ctx->data_src);
+      wm->wayland_ctx->data_src= NULL;
+    }
+
 
     glps_display_disconnect(wm);
     free(wm->wayland_ctx);

@@ -3,6 +3,7 @@ CFLAGS =  -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -g3 -fsanitiz
 
 test :
 	gcc src/xdg/xdg-shell.c src/utils/logger/pico_logger.c src/utils/wayland_utils.c  src/xdg/wlr-data-control-unstable-v1.c src/xdg/xdg-decorations.c src/glad/glad.c  src/glps_opengl.c src/glps_window_manager.c examples/3d_cube.c ${CFLAGS} -o examples/3d_cube ${LIBS}
+	gcc src/xdg/xdg-shell.c src/utils/logger/pico_logger.c src/utils/wayland_utils.c  src/xdg/wlr-data-control-unstable-v1.c src/xdg/xdg-decorations.c src/glad/glad.c  src/glps_opengl.c src/glps_window_manager.c examples/sine_wave.c ${CFLAGS} -o examples/sine_wave ${LIBS}
 
 run:
 	./build/test

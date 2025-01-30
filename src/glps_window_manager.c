@@ -994,7 +994,7 @@ static void data_device_handle_selection(void *data,
 
   while ((n = read(fds[0], buf, sizeof(buf) - 1)) > 0) {
     buf[n] = '\0';
-    strcat(wm->clipboard.buff, buf);
+    strncat(wm->clipboard.buff, buf, sizeof(*wm->clipboard.buff));
   }
 
   close(fds[0]);

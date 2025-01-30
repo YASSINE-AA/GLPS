@@ -8,7 +8,7 @@ GLPS aims to provide a robust, flexible graphics rendering framework with compre
 
 ## Current Status
 
-![Wayland Support](image-1.png)
+![Wayland Support](preview.gif)
 
 ### Feature Matrix
 
@@ -35,6 +35,12 @@ GLPS aims to provide a robust, flexible graphics rendering framework with compre
 1. Implement multi-monitor support
 2. Enhance cross-platform compatibility
 3. Expand input method support
+
+## GLPS Working Examples
+
+| 3D Cube | Sine Wave |
+|---------|-----------|
+| ![3D Cube](3d_cube.gif) | ![Sine Wave](sine_wave.gif) |
 
 ## Logging
 

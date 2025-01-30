@@ -211,6 +211,8 @@ typedef struct {
   EGLSurface egl_surface; /**< EGL surface. */
   struct wl_egl_window *egl_window; /**< Wayland EGL window. */
   glps_WindowProperties properties; /**< Window properties. */
+  struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration;
+  struct wl_callback* frame_callback;
   void *frame_args;
   uint32_t serial;
 } glps_WaylandWindow;
@@ -238,7 +240,6 @@ typedef struct {
   struct xkb_keymap *xkb_keymap;   /**< Keyboard keymap. */
   struct wl_touch *wl_touch;       /**< Wayland touch interface. */
   struct wl_data_offer *current_drag_offer;
-  struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration;
   uint32_t current_serial;
   uint32_t keyboard_serial;
   size_t keyboard_window_id;

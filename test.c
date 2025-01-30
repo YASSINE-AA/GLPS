@@ -104,8 +104,11 @@ void window_close_callback(size_t window_id, void *data) {
 int main(int argc, char *argv[]) {
   wm = glps_wm_init();
 
+  set_minimum_log_level(DEBUG_LEVEL_WARNING);
+
   glps_wm_window_create(wm, "test window", 640, 480);
   glps_wm_window_create(wm, "test window 2", 800, 800);
+  glps_wm_window_create(wm, "test window 2", 100, 100);
 
   /* ================== CALLBACK SETUPS ================== */
   glps_wm_set_keyboard_callback(wm, keyboard_callback, (void *)wm);

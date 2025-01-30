@@ -8,7 +8,7 @@ GLPS aims to provide a robust, flexible graphics rendering framework with compre
 
 ## Current Status
 
-![Wayland Support](preview.gif)
+![Wayland Support](./preview.gif)
 
 ### Feature Matrix
 

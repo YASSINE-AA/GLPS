@@ -18,6 +18,7 @@
 #include "../include/glps_common.h"
 #include "../include/glps_opengl.h"
 #include "../include/glps_window_manager.h"
+#include "../include/glps_wayland.h"
 #include "../internal/utils/logger/pico_logger.h"
 #include <math.h>
 #include <stdio.h>
@@ -104,7 +105,7 @@ void render_sine_wave(glps_WindowManager *wm, size_t window_id,
   glDrawArrays(GL_LINE_STRIP, 0, 100);
 
   glps_wm_swap_buffers(wm, window_id);
-  glps_wm_update(wm, window_id);
+  glps_wl_update(wm, window_id);
 
   sine_wave_data->angle += 0.01f;
 }

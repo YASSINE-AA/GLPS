@@ -80,12 +80,6 @@ void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id);
  */
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval);
 
-/**
- * @brief Updates the specified window, handling rendering and events.
- * @param wm Pointer to the GLPS Window Manager.
- * @param window_id ID of the window to update.
- */
-void glps_wm_update(glps_WindowManager *wm, size_t window_id);
 
 /**
  * @brief Runs the main loop of the window manager.

@@ -631,7 +631,7 @@ void data_source_handle_send(void *data, struct wl_data_source *source,
     return;
   }
 
-  LOG_INFO("Copying to clipboard: MIME type=%s, Data Preview=%.20s", mime_type,
+  LOG_INFO("Copying to clipboard: MIME type=%s, Data Preview=%s", mime_type,
            wm->clipboard.buff);
 
   if (strcmp(mime_type, wm->clipboard.mime_type) == 0) {
@@ -851,7 +851,7 @@ void data_device_handle_selection(void *data,
 
   while ((n = read(fds[0], buf, sizeof(buf) - 1)) > 0) {
     buf[n] = '\0';
-    strncat(wm->clipboard.buff, buf, sizeof(*wm->clipboard.buff));
+    strcat(wm->clipboard.buff, buf);
   }
 
   close(fds[0]);

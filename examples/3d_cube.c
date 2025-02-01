@@ -215,7 +215,8 @@ void window_close_callback(size_t window_id, void *data) {
 }
 
 int main(int argc, char *argv[]) {
-  glps_WindowManager *wm = glps_wm_init();
+  //set_logging_enabled(false);
+    glps_WindowManager *wm = glps_wm_init();
   //set_minimum_log_level(DEBUG_LEVEL_WARNING);
 
   size_t window_id = glps_wm_window_create(wm, "3D Cube Example", 800, 600);

@@ -1,5 +1,7 @@
 #include "../include/glps_window_manager.h"
+#include "../include/glps_config.h"
 #include "../include/glps_opengl.h"
+#include "../include/glps_wayland.h"
 #include <EGL/eglplatform.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -8,9 +10,6 @@
 #include <wayland-client-protocol.h>
 #include <wayland-egl-core.h>
 #include <xkbcommon/xkbcommon.h>
-#include "../include/glps_wayland.h"
-
-
 
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
@@ -85,8 +84,6 @@ void glps_wm_set_scroll_callback(
   wm->callbacks.mouse_scroll_data = data;
 }
 
-
-
 void glps_wm_set_keyboard_enter_callback(
     glps_WindowManager *wm,
     void (*keyboard_enter_callback)(size_t window_id, void *data), void *data) {
@@ -129,8 +126,6 @@ void glps_wm_set_keyboard_leave_callback(
   wm->callbacks.keyboard_leave_data = data;
 }
 
-
-
 void glps_wm_set_touch_callback(
     glps_WindowManager *wm,
     void (*touch_callback)(size_t window_id, int id, double touch_x,
@@ -146,11 +141,6 @@ void glps_wm_set_touch_callback(
   wm->callbacks.touch_callback = touch_callback;
   wm->callbacks.touch_data = data;
 }
-
-
-
-
-
 
 void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
                                  char *data) {
@@ -221,9 +211,6 @@ void glps_wm_start_drag_n_drop(
                             wm->pointer_event.serial);
 }
 
-
-
-
 void glps_wm_run(glps_WindowManager *wm) {
   while (true) {
     if (wl_display_dispatch(wm->wayland_ctx->wl_display) == -1) {
@@ -233,8 +220,6 @@ void glps_wm_run(glps_WindowManager *wm) {
   }
 }
 
-
-
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
   eglSwapInterval(wm->egl_ctx->dpy, 0);
 }
@@ -242,8 +227,6 @@ void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
 void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
   eglSwapBuffers(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface);
 }
-
-
 
 void glps_wm_window_set_resize_callback(
     glps_WindowManager *wm,
@@ -272,10 +255,6 @@ void glps_wm_window_set_close_callback(
   wm->callbacks.window_close_callback = window_close_callback;
   wm->callbacks.window_close_data = data;
 }
-
-
-
-
 
 static void _create_ctx(glps_WindowManager *wm) {
   static const EGLint context_attribs[] = {
@@ -342,13 +321,18 @@ static void _init_egl(glps_WindowManager *wm) {
   }
 }
 glps_WindowManager *glps_wm_init(void) {
+
   glps_WindowManager *wm = malloc(sizeof(glps_WindowManager));
   *wm = (glps_WindowManager){0};
   if (!wm) {
     LOG_ERROR("Failed to allocate memory for glps_WindowManager");
     return NULL;
   }
+#ifdef GLPS_USE_LINUX
 
+const char* session_type =   GLPS_INIT();
+  LOG_CRITICAL("USING %s", session_type);
+  exit(1);
   wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
   if (!wm->windows) {
     LOG_ERROR("Failed to allocate memory for windows array");
@@ -425,6 +409,11 @@ glps_WindowManager *glps_wm_init(void) {
   }
 
   _init_egl(wm);
+
+#elif defined(GLPS_USE_WIN32)
+  LOG_CRITICAL("USING WIN32");
+  exit(1);
+#endif
 
   return wm;
 }

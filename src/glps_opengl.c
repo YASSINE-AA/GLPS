@@ -1,4 +1,4 @@
-#include "../include/glps_opengl.h"
+#include "glps_opengl.h"
 
 static void check_shader_compile(GLuint shader) {
   GLint success;

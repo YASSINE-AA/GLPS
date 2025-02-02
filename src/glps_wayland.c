@@ -1,4 +1,4 @@
-#include "../include/glps_wayland.h"
+#include <glps_wayland.h>
 
 void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
                       uint32_t serial) {

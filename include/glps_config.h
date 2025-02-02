@@ -2,7 +2,7 @@
 #define GLPS_CONFIG_H
 
 #ifdef __linux__
-#include "../internal/utils/logger/pico_logger.h"
+#include "utils/logger/pico_logger.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -15,11 +15,11 @@
  along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../include/glps_common.h"
-#include "../include/glps_opengl.h"
-#include "../include/glps_window_manager.h"
-#include "../include/glps_wayland.h"
-#include "../internal/utils/logger/pico_logger.h"
+#include "glps_common.h"
+#include "glps_opengl.h"
+#include "glps_window_manager.h"
+#include "glps_wayland.h"
+#include "utils/logger/pico_logger.h"
 #include <math.h>
 #include <stdio.h>
 

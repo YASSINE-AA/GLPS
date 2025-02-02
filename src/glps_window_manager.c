@@ -1,7 +1,7 @@
-#include "../include/glps_window_manager.h"
-#include "../include/glps_config.h"
-#include "../include/glps_opengl.h"
-#include "../include/glps_wayland.h"
+#include "glps_window_manager.h"
+#include "glps_config.h"
+#include "glps_opengl.h"
+#include "glps_wayland.h"
 #include <EGL/eglplatform.h>
 #include <stddef.h>
 #include <stdio.h>

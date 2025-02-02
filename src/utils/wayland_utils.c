@@ -1,4 +1,4 @@
-#include "../../internal/utils/wayland_utils.h"
+#include "utils/wayland_utils.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

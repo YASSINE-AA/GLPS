@@ -1,11 +1,11 @@
 #ifndef WAYLAND_UTILS_H
 #define WAYLAND_UTILS_H
 
-#include "../glad/glad.h"
+#include "glad/glad.h"
+#include "linmath.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include "../linmath.h"
 #include <freetype2/freetype/freetype.h>
 #include <unistd.h>
 

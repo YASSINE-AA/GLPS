@@ -20,7 +20,7 @@
  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "../../../internal/utils/logger/pico_logger.h"
+#include "utils/logger/pico_logger.h"
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>

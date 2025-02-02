@@ -21,15 +21,16 @@
 #include <xkbcommon/xkbcommon.h>
 
 // XDG Headers
-#include "../internal/xdg/wlr-data-control-unstable-v1.h"
-#include "../internal/xdg/xdg-decorations.h"
-#include "../internal/xdg/xdg-dialog.h"
-#include "../internal/xdg/xdg-shell.h"
+#include "xdg/wlr-data-control-unstable-v1.h"
+#include "xdg/xdg-decorations.h"
+#include "xdg/xdg-dialog.h"
+#include "xdg/xdg-shell.h"
 
 // OpenGL and utility headers
-#include "../internal/glad/glad.h"
-#include "../internal/utils/logger/pico_logger.h"
-#include "../internal/utils/wayland_utils.h"
+#include "glad/glad.h"
+#include "utils/logger/pico_logger.h"
+#include "utils/wayland_utils.h"
+
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <wayland-egl.h>

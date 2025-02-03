@@ -39,6 +39,8 @@ set(HEADERS
     internal/xdg/xdg-decorations.h
     internal/xdg/xdg-dialog.h
     internal/xdg/xdg-shell.h
+    internal/shaders.h
+
 )
 
 # -------------------------------------------------------------------
@@ -102,6 +104,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # -------------------------------------------------------------------
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include/GLPS/)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/internal/ DESTINATION include/GLPS/)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/shaders DESTINATION include/GLPS/)
+
 
 install(TARGETS ${PROJECT_NAME}
     EXPORT GLPSConfig

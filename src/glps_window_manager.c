@@ -332,7 +332,7 @@ glps_WindowManager *glps_wm_init(void) {
 
 const char* session_type =   GLPS_INIT();
   LOG_CRITICAL("USING %s", session_type);
-  exit(1);
+  // exit(1);
   wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
   if (!wm->windows) {
     LOG_ERROR("Failed to allocate memory for windows array");

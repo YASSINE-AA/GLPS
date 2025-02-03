@@ -1,5 +1,5 @@
 #include "glps_opengl.h"
-
+#include "shaders.h"
 static void check_shader_compile(GLuint shader) {
   GLint success;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
@@ -33,14 +33,14 @@ void glps_opengl_setup_shared(glps_WindowManager *wm) {
   wm->shared_ogl_ctx = malloc(sizeof(glps_SharedOpenGLContext));
   glGenBuffers(1, &wm->shared_ogl_ctx->text_vbo);
   wm->shared_ogl_ctx->text_vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  set_shader_src_file("shaders/text/text_vertex.glsl",
+  set_shader_src_file(SHADERS_TEXT_VERTEX,
                       wm->shared_ogl_ctx->text_vertex_shader);
 
   glCompileShader(wm->shared_ogl_ctx->text_vertex_shader);
   check_shader_compile(wm->shared_ogl_ctx->text_vertex_shader);
 
   wm->shared_ogl_ctx->text_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  set_shader_src_file("shaders/text/text_fragment.glsl",
+  set_shader_src_file(SHADERS_TEXT_FRAGMENT,
                       wm->shared_ogl_ctx->text_fragment_shader);
   glCompileShader(wm->shared_ogl_ctx->text_fragment_shader);
   check_shader_compile(wm->shared_ogl_ctx->text_fragment_shader);
@@ -48,12 +48,12 @@ void glps_opengl_setup_shared(glps_WindowManager *wm) {
   glGenBuffers(1, &wm->shared_ogl_ctx->shape_vbo);
 
   GLuint shape_vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  set_shader_src_file("shaders/shape/shape_vertex.glsl", shape_vertex_shader);
+  set_shader_src_file(SHADERS_SHAPE_VERTEX , shape_vertex_shader);
   glCompileShader(shape_vertex_shader);
   check_shader_compile(shape_vertex_shader);
 
   GLuint shape_fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  set_shader_src_file("shaders/shape/shape_fragment.glsl",
+  set_shader_src_file(SHADERS_SHAPE_FRAGMENT ,
                       shape_fragment_shader);
   glCompileShader(shape_fragment_shader);
   check_shader_compile(shape_fragment_shader);

@@ -15,9 +15,9 @@
  along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "glps_common.h"
 #include "../internal/glad/glad.h"
 #include "../internal/linmath.h"
+#include "glps_common.h"
 
 #include "glps_wayland.h"
 #include "glps_window_manager.h"
@@ -174,9 +174,9 @@ void window_resize_callback(size_t window_id, int width, int height,
 }
 
 void window_frame_update_callback(size_t window_id, void *data) {
-  LOG_INFO("frame callback");
   SineWaveData *sine_data = (SineWaveData *)data;
   render_sine_wave(sine_data->wm, window_id, sine_data);
+  LOG_INFO("%.2lf FPS", (double)glps_wm_get_fps(sine_data->wm, window_id));
   glps_wl_update(sine_data->wm, window_id);
 }
 
@@ -187,10 +187,12 @@ void window_close_callback(size_t window_id, void *data) {
 
 int main(int argc, char *argv[]) {
   glps_WindowManager *wm = glps_wm_init();
-  set_minimum_log_level(DEBUG_LEVEL_WARNING);
 
   size_t window_id = glps_wm_window_create(wm, "Sine Wave Example", 800, 600);
-
+  if (!gladLoadGLLoader((GLADloadproc)glps_get_proc_addr())) {
+    fprintf(stderr, "Failed to initialize GLAD\n");
+    exit(EXIT_FAILURE);
+  }
   glps_wm_set_window_ctx_curr(wm, window_id);
 
   SineWaveData sine_wave_data;
@@ -230,9 +232,7 @@ int main(int argc, char *argv[]) {
   glps_wm_window_set_frame_update_callback(wm, window_frame_update_callback,
                                            (void *)&sine_wave_data);
 
-      for (size_t i = 0; i < wm->window_count; ++i) {
-    render_sine_wave(wm, window_id, &sine_wave_data);
-  }
+  render_sine_wave(wm, window_id, &sine_wave_data);
 
   while (!glps_wm_should_close(wm)) {
     glps_wl_update(wm, window_id); // smooth continuous rendering.

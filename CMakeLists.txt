@@ -9,12 +9,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Source Files
 # -------------------------------------------------------------------
 set(SOURCES
-    src/glps_opengl.c
     src/glps_wayland.c
     src/glps_window_manager.c
     src/glad/glad.c
     src/utils/logger/pico_logger.c
-    src/utils/wayland_utils.c
     src/xdg/wlr-data-control-unstable-v1.c
     src/xdg/xdg-decorations.c
     src/xdg/xdg-dialog.c
@@ -25,22 +23,15 @@ set(SOURCES
 # Header Files (for IDE integration and installation)
 # -------------------------------------------------------------------
 set(HEADERS
-    include/glps_opengl.h
     include/glps_wayland.h
     include/glps_window_manager.h
     include/glps_common.h
     include/glps_config.h
-    internal/linmath.h
-    internal/glad/glad.h
-    internal/KHR/khrplatform.h
     internal/utils/logger/pico_logger.h
-    internal/utils/wayland_utils.h
     internal/xdg/wlr-data-control-unstable-v1.h
     internal/xdg/xdg-decorations.h
     internal/xdg/xdg-dialog.h
     internal/xdg/xdg-shell.h
-    internal/shaders.h
-
 )
 
 # -------------------------------------------------------------------
@@ -56,7 +47,6 @@ include_directories(SYSTEM
     /usr/include/glib-2.0
     /usr/lib/glib-2.0/include
     /usr/include/pixman-1
-    /usr/include/freetype2
     /usr/include/libdrm
     /usr/include/libpng12
     /usr/include
@@ -79,7 +69,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 # Specify include directories for the GLPS library.
 target_include_directories(${PROJECT_NAME}
-    PUBLIC 
+    PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include/GLPS>
     PRIVATE
@@ -89,13 +79,11 @@ target_include_directories(${PROJECT_NAME}
 # Link against required libraries for GLPS.
 target_link_libraries(${PROJECT_NAME} PRIVATE
     m
-    GL
     EGL
     wayland-client
     wayland-server
     wayland-cursor
     wayland-egl
-    freetype
     xkbcommon
 )
 

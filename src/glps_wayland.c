@@ -1029,14 +1029,12 @@ void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
 
   wl_egl_window_resize(window->egl_window, width, height, 0, 0);
 
-
   if (wm->callbacks.window_resize_callback) {
     wm->callbacks.window_resize_callback(window_id, window->properties.width,
                                          window->properties.height,
                                          wm->callbacks.window_resize_data);
   }
   glps_wl_update(wm, window_id);
-
 }
 
 void handle_toplevel_close(void *data, struct xdg_toplevel *toplevel) {

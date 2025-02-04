@@ -8,7 +8,6 @@
 #define GLPS_WINDOW_MANAGER_H
 
 #include "glps_common.h"
-#include "glps_opengl.h"
 
 /**
  * @brief Initializes the GLPS Window Manager.
@@ -245,5 +244,10 @@ void glps_wm_start_drag_n_drop(
     void (*drag_n_drop_callback)(size_t origin_window_id, char *mime,
                                  char *buff, void *data),
     void *data);
+
+/* ======= Utilities ======= */
+double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id);
+
+void *glps_get_proc_addr(void);
 
 #endif // GLPS_WINDOW_MANAGER_H

@@ -1,6 +1,5 @@
 #include "glps_window_manager.h"
 #include "glps_config.h"
-#include "glps_opengl.h"
 #include "glps_wayland.h"
 #include <EGL/eglplatform.h>
 #include <stddef.h>
@@ -367,7 +366,6 @@ glps_WindowManager *glps_wm_init(void) {
   wm->wayland_ctx->wl_display = wl_display_connect(NULL);
   if (!wm->wayland_ctx->wl_display) {
     LOG_ERROR("Failed to connect to Wayland display");
-    free(wm->shared_ogl_ctx);
     free(wm->wayland_ctx);
     free(wm->windows);
     free(wm);
@@ -379,7 +377,6 @@ glps_WindowManager *glps_wm_init(void) {
   if (!wm->wayland_ctx->wl_registry) {
     LOG_ERROR("Failed to get Wayland registry");
     wl_display_disconnect(wm->wayland_ctx->wl_display);
-    free(wm->shared_ogl_ctx);
     free(wm->wayland_ctx);
     free(wm->windows);
     free(wm);
@@ -406,7 +403,6 @@ glps_WindowManager *glps_wm_init(void) {
     LOG_ERROR("Failed to retrieve Wayland compositor or xdg_wm_base");
     wl_registry_destroy(wm->wayland_ctx->wl_registry);
     wl_display_disconnect(wm->wayland_ctx->wl_display);
-    free(wm->shared_ogl_ctx);
     free(wm->wayland_ctx);
     free(wm->windows);
     free(wm);
@@ -454,10 +450,12 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
   *height = window->properties.height;
 }
 
+void *glps_get_proc_addr() { return eglGetProcAddress; }
+
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height) {
   glps_WaylandWindow *window = malloc(sizeof(glps_WaylandWindow));
-  window->specific_ogl_ctx = malloc(sizeof(glps_WindowOpenGLContext));
+
   window->wl_surface =
       wl_compositor_create_surface(wm->wayland_ctx->wl_compositor);
   if (!window->wl_surface) {
@@ -467,6 +465,9 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
 
   window->properties.width = width;
   window->properties.height = height;
+
+  window->fps_start_time = (struct timespec){0};
+  window->fps_is_init = false;
 
   window->xdg_surface = xdg_wm_base_get_xdg_surface(
       wm->wayland_ctx->xdg_wm_base, window->wl_surface);
@@ -525,11 +526,7 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   if (wm->window_count == 0) {
     _create_ctx(wm);
     glps_wm_set_window_ctx_curr(wm, 0);
-    glps_opengl_init(wm);
-    glps_opengl_setup_shared(wm);
   }
-
-  glps_opengl_setup_separate(wm, wm->window_count);
 
   // setup frame callback
   frame_callback_args *frame_args =
@@ -589,7 +586,6 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
   xdg_surface_destroy(window->xdg_surface);
   wl_surface_destroy(window->wl_surface);
 
-  free(window->specific_ogl_ctx);
   free(window);
 
   wm->windows[window_id] = NULL;
@@ -606,7 +602,28 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
     exit(EXIT_SUCCESS);
   }
 }
+double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
 
+  if (!wm->windows[window_id]->fps_is_init) {
+    clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
+    wm->windows[window_id]->fps_is_init = true;
+    return 0;
+  } else {
+    struct timespec end_time = {0};
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    double seconds =
+        end_time.tv_sec - wm->windows[window_id]->fps_start_time.tv_sec;
+    double nanoseconds =
+        end_time.tv_nsec - wm->windows[window_id]->fps_start_time.tv_nsec;
+
+    if (nanoseconds < 0) {
+      seconds--;
+      nanoseconds += 1000000000L;
+    }
+    wm->windows[window_id]->fps_start_time = end_time;
+    return (double)1.0 / ((seconds + nanoseconds) / 1e9);
+  }
+}
 
 bool glps_wm_should_close(glps_WindowManager *wm) {
   if (wl_display_dispatch(wm->wayland_ctx->wl_display) == -1)
@@ -628,7 +645,6 @@ void glps_wm_destroy(glps_WindowManager *wm) {
       glps_wm_window_destroy(wm, i);
     }
   }
-  glps_opengl_cleanup(wm);
   _cleanup_egl(wm);
   _cleanup_wl(wm);
   if (wm != NULL) {

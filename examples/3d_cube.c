@@ -15,13 +15,16 @@
  along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../internal/glad/glad.h"
+#include "../internal/linmath.h"
 #include "glps_common.h"
-#include "glps_opengl.h"
 #include "glps_wayland.h"
+
 #include "glps_window_manager.h"
 #include "utils/logger/pico_logger.h"
 #include <math.h>
 #include <stdio.h>
+#include <time.h>
 
 typedef struct {
   GLuint shader_program;
@@ -205,9 +208,10 @@ void window_resize_callback(size_t window_id, int width, int height,
 }
 
 void window_frame_update_callback(size_t window_id, void *data) {
-  LOG_INFO("frame callback");
   CubeData *cube_data = (CubeData *)data;
   render_cube(cube_data->wm, window_id, cube_data);
+  LOG_INFO("%.2lf FPS", (double)glps_wm_get_fps(cube_data->wm, window_id));
+
   glps_wl_update(cube_data->wm, window_id);
 }
 
@@ -222,6 +226,10 @@ int main(int argc, char *argv[]) {
   // set_minimum_log_level(DEBUG_LEVEL_WARNING);
 
   size_t window_id = glps_wm_window_create(wm, "3D Cube Example", 800, 600);
+  if (!gladLoadGLLoader((GLADloadproc)glps_get_proc_addr())) {
+    fprintf(stderr, "Failed to initialize GLAD\n");
+    exit(EXIT_FAILURE);
+  }
 
   glps_wm_set_window_ctx_curr(wm, window_id);
   glEnable(GL_DEPTH_TEST);
@@ -269,7 +277,7 @@ int main(int argc, char *argv[]) {
   render_cube(wm, window_id, &cube_data);
 
   while (!glps_wm_should_close(wm)) {
-    glps_wl_update(wm, window_id); // smooth continuous rendering.
+    glps_wl_update(wm, window_id);
   }
 
   glps_wm_destroy(wm);

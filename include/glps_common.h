@@ -26,27 +26,14 @@
 #include "xdg/xdg-dialog.h"
 #include "xdg/xdg-shell.h"
 
-// OpenGL and utility headers
-#include "glad/glad.h"
 #include "utils/logger/pico_logger.h"
-#include "utils/wayland_utils.h"
+#include <stdlib.h>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <wayland-egl.h>
 #define MAX_WINDOWS 100
-/**
- * @struct Character
- * @brief Represents an individual character's rendering data.
- */
-typedef struct {
-  GLuint textureID; /**< Texture ID for the character. */
-  int width;        /**< Width of the character in pixels. */
-  int height;       /**< Height of the character in pixels. */
-  int bearingX;     /**< Horizontal bearing. */
-  int bearingY;     /**< Vertical bearing. */
-  int advance;      /**< Advance width for the character. */
-} Character;
+
 
 /**
  * @enum pointer_event_mask
@@ -146,38 +133,7 @@ struct touch_event {
   size_t window_id;
 };
 
-/**
- * @enum GLPS_RENDER_API
- * @brief Rendering API types.
- */
-typedef enum {
-  GLPS_OPENGL, /**< OpenGL rendering API. */
-  GLPS_VULKAN  /**< Vulkan rendering API. */
-} GLPS_RENDER_API;
 
-/**
- * @struct glps_SharedOpenGLContext
- * @brief Shared OpenGL context for rendering.
- */
-typedef struct {
-  GLuint shape_program;        /**< Program for rendering shapes. */
-  GLuint text_vbo;             /**< Vertex buffer object for text. */
-  GLuint shape_vbo;            /**< Vertex buffer object for shapes. */
-  mat4x4 projection;           /**< Projection matrix. */
-  GLuint text_fragment_shader; /**< Fragment shader for text. */
-  GLuint text_vertex_shader;   /**< Vertex shader for text. */
-  Character characters[128];   /**< Array of character data. */
-} glps_SharedOpenGLContext;
-
-/**
- * @struct glps_WindowOpenGLContext
- * @brief OpenGL context specific to a window.
- */
-typedef struct {
-  GLuint text_program; /**< Text rendering program. */
-  GLuint text_vao;     /**< Vertex array object for text. */
-  GLuint shape_vao;    /**< Vertex array object for shapes. */
-} glps_WindowOpenGLContext;
 
 /**
  * @struct glps_EGLContext
@@ -207,13 +163,15 @@ typedef struct {
   struct xdg_surface *xdg_surface;   /**< XDG surface. */
   struct xdg_toplevel *xdg_toplevel; /**< XDG toplevel. */
   struct wl_surface *wl_surface;     /**< Wayland surface. */
-  glps_WindowOpenGLContext
-      *specific_ogl_ctx;  /**< OpenGL context specific to the window. */
+
   EGLSurface egl_surface; /**< EGL surface. */
   struct wl_egl_window *egl_window; /**< Wayland EGL window. */
   glps_WindowProperties properties; /**< Window properties. */
   struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration;
   struct wl_callback *frame_callback;
+  // FPS COUNTER
+  struct timespec fps_start_time;
+  bool fps_is_init;
   void *frame_args;
   uint32_t serial;
 } glps_WaylandWindow;
@@ -254,9 +212,13 @@ struct clipboard_data {
   char buff[1024];
 };
 
+struct glps_debug
+{
+    bool enable_fps_counter;
+};
+
 struct glps_Callback {
   glps_WaylandContext *wayland_ctx;         /**< Wayland context. */
-  glps_SharedOpenGLContext *shared_ogl_ctx; /**< Shared OpenGL context. */
   glps_EGLContext *egl_ctx;                 /**< EGL context. */
   char font_path[256];                      /**< Path to the font file. */
   size_t window_count;                      /**< Number of managed windows. */
@@ -320,7 +282,6 @@ struct glps_Callback {
  */
 typedef struct {
   glps_WaylandContext *wayland_ctx;         /**< Wayland context. */
-  glps_SharedOpenGLContext *shared_ogl_ctx; /**< Shared OpenGL context. */
   glps_EGLContext *egl_ctx;                 /**< EGL context. */
   char font_path[256];                      /**< Path to the font file. */
   size_t window_count;                      /**< Number of managed windows. */
@@ -331,6 +292,7 @@ typedef struct {
   struct pointer_event pointer_event; /**< Current pointer event data. */
   struct clipboard_data clipboard;    /**< Current clipboard data. */
   struct glps_Callback callbacks;
+  struct glps_debug debug_utilities;
 
 } glps_WindowManager;
 

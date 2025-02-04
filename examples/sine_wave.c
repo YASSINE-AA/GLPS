@@ -16,7 +16,9 @@
  */
 
 #include "glps_common.h"
-#include "glps_opengl.h"
+#include "../internal/glad/glad.h"
+#include "../internal/linmath.h"
+
 #include "glps_wayland.h"
 #include "glps_window_manager.h"
 #include "utils/logger/pico_logger.h"

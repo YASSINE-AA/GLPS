@@ -106,7 +106,6 @@ GLuint create_shader_program(const char *vertex_source,
 void render_cube(glps_WindowManager *wm, size_t window_id,
                  CubeData *cube_data) {
   glps_wm_set_window_ctx_curr(wm, window_id);
-  glps_wl_update(wm, window_id);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -122,8 +121,6 @@ void render_cube(glps_WindowManager *wm, size_t window_id,
 
   int width, height;
   glps_wm_window_get_dimensions(wm, window_id, &width, &height);
-
-  glViewport(0, 0, width, height);
 
   mat4x4_perspective(projection, M_PI / 4.0f, (float)width / (float)height,
                      0.1f, 100.0f);
@@ -204,9 +201,14 @@ void keyboard_leave_callback(size_t window_id, void *data) {
 
 void window_resize_callback(size_t window_id, int width, int height,
                             void *data) {
-  LOG_INFO("resize callback");
+  glViewport(0, 0, width, height);
+}
+
+void window_frame_update_callback(size_t window_id, void *data) {
+  LOG_INFO("frame callback");
   CubeData *cube_data = (CubeData *)data;
   render_cube(cube_data->wm, window_id, cube_data);
+  glps_wl_update(cube_data->wm, window_id);
 }
 
 void window_close_callback(size_t window_id, void *data) {
@@ -261,10 +263,15 @@ int main(int argc, char *argv[]) {
   glps_wm_window_set_resize_callback(wm, window_resize_callback,
                                      (void *)&cube_data);
   glps_wm_window_set_close_callback(wm, window_close_callback, (void *)wm);
+  glps_wm_window_set_frame_update_callback(wm, window_frame_update_callback,
+                                           (void *)&cube_data);
 
   render_cube(wm, window_id, &cube_data);
 
-  glps_wm_run(wm);
+  while (!glps_wm_should_close(wm)) {
+    glps_wl_update(wm, window_id); // smooth continuous rendering.
+  }
+
   glps_wm_destroy(wm);
   return 0;
 }

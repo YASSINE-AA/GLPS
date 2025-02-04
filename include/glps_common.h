@@ -296,6 +296,9 @@ struct glps_Callback {
       void *data); /**< Callback for resize events. */
   void (*window_close_callback)(
       size_t window_id, void *data); /**< Callback for window close event. */
+  void (*window_frame_update_callback)(
+      size_t window_id, void *data); /**< Callback for window update event. */
+
   void *mouse_enter_data;
   void *mouse_leave_data;
   void *mouse_move_data;
@@ -307,6 +310,7 @@ struct glps_Callback {
   void *touch_data;
   void *drag_n_drop_data;
   void *window_resize_data;
+  void *window_frame_update_data;
   void *window_close_data;
 };
 

@@ -50,6 +50,17 @@ void glps_wm_window_set_resize_callback(
     void *data);
 
 /**
+ * @brief Allows user to set callback to handle window frame update.
+ * @param wm Pointer to the GLPS Window Manager.
+ * @param window_frame_update_callback user-set window frame update callback.
+ * @param data Additional data to pass to the callback.
+ */
+void glps_wm_window_set_frame_update_callback(
+    glps_WindowManager *wm,
+    void (*window_frame_update_callback)(size_t window_id, void *data),
+    void *data);
+
+/**
  * @brief Allows user to set callback to handle window resize.
  * @param wm Pointer to the GLPS Window Manager.
  * @param window_close_callback user-set window close callback.
@@ -80,13 +91,6 @@ void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id);
  */
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval);
 
-
-/**
- * @brief Runs the main loop of the window manager.
- * @param wm Pointer to the GLPS Window Manager.
- */
-void glps_wm_run(glps_WindowManager *wm);
-
 /**
  * @brief Destroys the specified window.
  * @param wm Pointer to the GLPS Window Manager.
@@ -99,6 +103,8 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id);
  * @param wm Pointer to the GLPS Window Manager.
  */
 void glps_wm_destroy(glps_WindowManager *wm);
+
+bool glps_wm_should_close(glps_WindowManager *wm);
 
 /* ======= Events: I/O Devices ======= */
 

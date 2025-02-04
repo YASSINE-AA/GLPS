@@ -211,15 +211,6 @@ void glps_wm_start_drag_n_drop(
                             wm->pointer_event.serial);
 }
 
-void glps_wm_run(glps_WindowManager *wm) {
-  while (true) {
-    if (wl_display_dispatch(wm->wayland_ctx->wl_display) == -1) {
-      fprintf(stderr, "Error in Wayland event dispatch\n");
-      break;
-    }
-  }
-}
-
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
   eglSwapInterval(wm->egl_ctx->dpy, 0);
 }
@@ -241,6 +232,20 @@ void glps_wm_window_set_resize_callback(
 
   wm->callbacks.window_resize_callback = window_resize_callback;
   wm->callbacks.window_resize_data = data;
+}
+
+void glps_wm_window_set_frame_update_callback(
+    glps_WindowManager *wm,
+    void (*window_frame_update_callback)(size_t window_id, void *data),
+    void *data) {
+
+  if (wm == NULL) {
+    LOG_ERROR("Window Manager is NULL.");
+    return;
+  }
+
+  wm->callbacks.window_frame_update_callback = window_frame_update_callback;
+  wm->callbacks.window_frame_update_data = data;
 }
 
 void glps_wm_window_set_close_callback(
@@ -330,7 +335,7 @@ glps_WindowManager *glps_wm_init(void) {
   }
 #ifdef GLPS_USE_LINUX
 
-const char* session_type =   GLPS_INIT();
+  const char *session_type = GLPS_INIT();
   LOG_CRITICAL("USING %s", session_type);
   // exit(1);
   wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
@@ -600,6 +605,16 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
     glps_wm_destroy(wm);
     exit(EXIT_SUCCESS);
   }
+}
+
+
+bool glps_wm_should_close(glps_WindowManager *wm) {
+  if (wl_display_dispatch(wm->wayland_ctx->wl_display) == -1)
+    return true;
+  else if (wm->window_count == 0)
+    return true;
+
+  return false;
 }
 
 void glps_wm_destroy(glps_WindowManager *wm) {

@@ -52,7 +52,8 @@ ssize_t __get_window_id_from_xdg_surface(glps_WindowManager *wm,
 }
 
 void glps_wl_update(glps_WindowManager *wm, size_t window_id) {
-  int width = wm->windows[window_id]->properties.width, height =  wm->windows[window_id]->properties.height;
+  int width = wm->windows[window_id]->properties.width,
+      height = wm->windows[window_id]->properties.height;
   wl_surface_damage(wm->windows[window_id]->wl_surface, 0, 0, width, height);
   wl_surface_commit(wm->windows[window_id]->wl_surface);
 }
@@ -989,14 +990,13 @@ void frame_callback_done(void *data, struct wl_callback *callback,
     return;
   }
 
-  if (callback) {
-    wl_callback_destroy(window->frame_callback);
+  if (args->wm->callbacks.window_frame_update_callback) {
+    args->wm->callbacks.window_frame_update_callback(
+        args->window_id, args->wm->callbacks.window_frame_update_data);
   }
 
-  if (args->wm->callbacks.window_resize_callback) {
-    args->wm->callbacks.window_resize_callback(
-        args->window_id, window->properties.width, window->properties.height,
-        args->wm->callbacks.window_resize_data);
+  if (callback) {
+    wl_callback_destroy(window->frame_callback);
   }
 
   if (window->wl_surface) {
@@ -1008,10 +1008,8 @@ void frame_callback_done(void *data, struct wl_callback *callback,
   }
 }
 
-
-struct wl_callback_listener frame_callback_listener = {
-    .done = frame_callback_done};
-
+struct wl_callback_listener frame_callback_listener = {.done =
+                                                           frame_callback_done};
 
 void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
                                int32_t width, int32_t height,
@@ -1031,7 +1029,14 @@ void handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
 
   wl_egl_window_resize(window->egl_window, width, height, 0, 0);
 
-  glps_wl_update(wm, window_id); // send update.
+
+  if (wm->callbacks.window_resize_callback) {
+    wm->callbacks.window_resize_callback(window_id, window->properties.width,
+                                         window->properties.height,
+                                         wm->callbacks.window_resize_data);
+  }
+  glps_wl_update(wm, window_id);
+
 }
 
 void handle_toplevel_close(void *data, struct xdg_toplevel *toplevel) {

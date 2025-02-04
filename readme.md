@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="glps_logo.png" alt="GLPS Logo" width="200">
+  <img src="glps_logo.png" alt="GLPS Logo" width="150">
   <h1>GLPS</h1>
 </div>
 

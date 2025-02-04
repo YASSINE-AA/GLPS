@@ -17,8 +17,8 @@
 
 #include "glps_common.h"
 #include "glps_opengl.h"
-#include "glps_window_manager.h"
 #include "glps_wayland.h"
+#include "glps_window_manager.h"
 #include "utils/logger/pico_logger.h"
 #include <math.h>
 #include <stdio.h>
@@ -143,8 +143,7 @@ void render_cube(glps_WindowManager *wm, size_t window_id,
   cube_data->angle += 0.01f;
 
   glps_wm_swap_buffers(wm, window_id);
-  glps_wl_update(wm, window_id);
-
+ glps_wl_update(wm, window_id);
 }
 
 void mouse_leave_callback(size_t window_id, void *data) {
@@ -205,6 +204,7 @@ void keyboard_leave_callback(size_t window_id, void *data) {
 
 void window_resize_callback(size_t window_id, int width, int height,
                             void *data) {
+  LOG_INFO("resize callback");
   CubeData *cube_data = (CubeData *)data;
   render_cube(cube_data->wm, window_id, cube_data);
 }
@@ -215,9 +215,9 @@ void window_close_callback(size_t window_id, void *data) {
 }
 
 int main(int argc, char *argv[]) {
-  //set_logging_enabled(false);
-    glps_WindowManager *wm = glps_wm_init();
-  //set_minimum_log_level(DEBUG_LEVEL_WARNING);
+  // set_logging_enabled(false);
+  glps_WindowManager *wm = glps_wm_init();
+  // set_minimum_log_level(DEBUG_LEVEL_WARNING);
 
   size_t window_id = glps_wm_window_create(wm, "3D Cube Example", 800, 600);
 

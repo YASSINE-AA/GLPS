@@ -15,12 +15,10 @@ Ever wanted a **lightweight, modern** alternative to GLFW that doesn't make you 
 
 GLPS is actively growing! Here's a look at what’s already in place and what’s brewing:
 
-### ✅ Feature Matrix
+### ✅ Wayland Feature Matrix
 
 | Category            | Feature               | Status      | Details |
 |--------------------|----------------------|------------|---------|
-| **Platform Support** | Wayland Backend       | ✅ Implemented  | Core Wayland protocol functionality |
-|                    | Multi-Platform Planning | ⬜ Roadmap   | Future cross-platform expansion |
 | **Window Management** | Multi-Window Support  | ✅ Implemented  | Unique contexts per window |
 |                    | High DPI Scaling       | ⬜ Planned    | Resolution adaptive interfaces |
 | **Graphics Integration** | EGL Support       | ✅ Implemented  | Display, context, surface management |
@@ -33,6 +31,24 @@ GLPS is actively growing! Here's a look at what’s already in place and what’
 |                    | XDG-Shell Support    | ✅ Implemented  | Surface and toplevel management |
 |                    | Clipboard Integration | ✅ Implemented  | Cross-application data transfer |
 |                    | Drag-and-Drop        | ✅ Implemented  | Enhanced user interaction |
+| **Development Tools** | Logging            | ✅ Implemented  | [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger) integration |
+
+---
+
+### ✅ Win32 Feature Matrix
+
+| Category            | Feature               | Status      | Details |
+|--------------------|----------------------|------------|---------|
+| **Window Management** | Multi-Window Support  | ✅ Implemented  | Unique contexts per window |
+|                    | High DPI Scaling       | ⬜ Planned    | Resolution adaptive interfaces |
+| **Graphics Integration** | WGL Support       | ✅ Implemented  | Display, context, surface management |
+|                    | OpenGL Contexts      | ✅ Implemented  | GLPS handles context creation, you do the rest |
+|                    | Vulkan Support       | ⬜ Planned    | Additional backend support |
+| **Input Handling**  | Keyboard Input       | ⬜ Planned   | Win32 keyboard events |
+|                    | Mouse Input          | ⬜ Planned   | Pointer event management |
+|                    | Touchscreen Support  | ⬜ Planned   | Touch input events |
+| **Advanced Features** | Clipboard Integration | ⬜ Planned   | Cross-application data transfer |
+|                    | Drag-and-Drop        | ⬜ Planned   | Enhanced user interaction |
 | **Development Tools** | Logging            | ✅ Implemented  | [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger) integration |
 
 ---

@@ -92,7 +92,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # -------------------------------------------------------------------
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include/GLPS/)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/internal/ DESTINATION include/GLPS/)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/shaders DESTINATION include/GLPS/)
 
 
 install(TARGETS ${PROJECT_NAME}

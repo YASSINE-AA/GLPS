@@ -844,18 +844,21 @@ void data_device_handle_selection(void *data,
   }
 
   wl_display_roundtrip(context->wl_display);
-
   char buf[1024];
+  size_t buff_size = sizeof(wm->clipboard.buff) - 1;
+
   ssize_t n;
-  memset(buf, 0, sizeof(buf));
   wm->clipboard.buff[0] = '\0';
 
   while ((n = read(fds[0], buf, sizeof(buf) - 1)) > 0) {
-    buf[n] = '\0';
-    strcat(wm->clipboard.buff, buf);
-  }
+      buf[n] = '\0';
 
-  close(fds[0]);
+      if (buff_size > 0) {
+          size_t to_copy = ((size_t) n < buff_size) ?(size_t)  n : buff_size;
+          strncat(wm->clipboard.buff, buf, to_copy);
+          buff_size -= to_copy;
+      }
+  }
 
   if (n < 0) {
     LOG_ERROR("Error reading clipboard data.");

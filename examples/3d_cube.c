@@ -15,8 +15,8 @@
  along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../internal/glad/glad.h"
-#include "../internal/linmath.h"
+#include "./glad/glad.h"
+#include "./linmath.h"
 #include "glps_common.h"
 #include "glps_wayland.h"
 

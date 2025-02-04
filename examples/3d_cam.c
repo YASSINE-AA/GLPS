@@ -1,6 +1,5 @@
-#include "../internal/glad/glad.h"
-#include "../internal/linmath.h"
-#include "glps_common.h"
+#include "glad/glad.h"
+#include "linmath.h"
 #include "glps_wayland.h"
 #include "glps_window_manager.h"
 #include "utils/logger/pico_logger.h"

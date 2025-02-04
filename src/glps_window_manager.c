@@ -1,5 +1,4 @@
 #include "glps_window_manager.h"
-#include "glps_config.h"
 #include "glps_wayland.h"
 #include <EGL/eglplatform.h>
 #include <stddef.h>
@@ -332,11 +331,8 @@ glps_WindowManager *glps_wm_init(void) {
     LOG_ERROR("Failed to allocate memory for glps_WindowManager");
     return NULL;
   }
-#ifdef GLPS_USE_LINUX
-
-  const char *session_type = GLPS_INIT();
-  LOG_CRITICAL("USING %s", session_type);
-  // exit(1);
+#ifdef GLPS_USE_WAYLAND
+  
   wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
   if (!wm->windows) {
     LOG_ERROR("Failed to allocate memory for windows array");

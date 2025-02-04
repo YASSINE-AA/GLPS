@@ -106,6 +106,7 @@ GLuint create_shader_program(const char *vertex_source,
 void render_cube(glps_WindowManager *wm, size_t window_id,
                  CubeData *cube_data) {
   glps_wm_set_window_ctx_curr(wm, window_id);
+  glps_wl_update(wm, window_id);
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -143,7 +144,6 @@ void render_cube(glps_WindowManager *wm, size_t window_id,
   cube_data->angle += 0.01f;
 
   glps_wm_swap_buffers(wm, window_id);
- glps_wl_update(wm, window_id);
 }
 
 void mouse_leave_callback(size_t window_id, void *data) {

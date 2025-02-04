@@ -1,9 +1,7 @@
 <div align="center">
   <img src="glps_logo.png" alt="GLPS Logo" width="150">
-  <h1>GLPS</h1>
+  <h1>GLIMPSE: Platform System (GLPS)</h1>
 </div>
-
-# GLIMPSE: Platform System (GLPS)
 
 🚀 **Glimpse (GLPS)** is a cross-platform **windowing and platform system** with a strong focus on **Wayland backend development**. Designed for **flexibility**, **performance**, and **developer sanity** (we try our best, at least).
 

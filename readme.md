@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="glps_logo.png" alt="GLPS Logo" width="120">
+  <img src="glps_logo.png" alt="GLPS Logo" width="80">
   <h1>GLIMPSE: Platform System (GLPS)</h1>
 </div>
 

@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(GLPS VERSION 1.0 LANGUAGES C)
-set(CMAKE_SYSTEM_NAME Windows)
+#set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_CROSSCOMPILING 1)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
@@ -10,6 +11,7 @@ pkg_check_modules(WAYLAND wayland-client wayland-egl egl)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     message(STATUS "Building for Win32")
+    set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
     add_definitions(-DGLPS_USE_WIN32)
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
@@ -33,6 +35,7 @@ set(SOURCES
     src/glps_wayland.c
     src/glps_window_manager.c
     src/utils/logger/pico_logger.c
+    src/egl_context.c
     src/xdg/wlr-data-control-unstable-v1.c
     src/xdg/xdg-decorations.c
     src/xdg/xdg-dialog.c
@@ -45,6 +48,7 @@ set(SOURCES
 set(HEADERS
     include/glps_wayland.h
     include/glps_window_manager.h
+    include/egl_context.h
     include/glps_common.h
     internal/utils/logger/pico_logger.h
     internal/xdg/wlr-data-control-unstable-v1.h

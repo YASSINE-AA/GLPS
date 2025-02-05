@@ -1,6 +1,4 @@
-#include <GL/gl.h>
 #include <glps_common.h>
-#include <windows.h>
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {

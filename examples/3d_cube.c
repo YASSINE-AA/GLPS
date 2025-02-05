@@ -275,13 +275,10 @@ int main(int argc, char *argv[]) {
                                            (void *)&cube_data);
 
   render_cube(wm, window_id, &cube_data);
-
-  LOG_PERFORMANCE(NULL);
   while (!glps_wm_should_close(wm)) {
-    glps_wl_update(wm, window_id);
+    glps_window_update(wm, window_id);
   }
-  LOG_PERFORMANCE("Program");
 
-  glps_wm_destroy(wm);
+ glps_wm_destroy(wm);
   return 0;
 }

@@ -1,13 +1,18 @@
 #include "glps_window_manager.h"
-#include "glps_wayland.h"
-#include <EGL/eglplatform.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef GLPS_USE_WAYLAND
+#include "glps_wayland.h"
+#include <egl_context.h>
+
+#include <EGL/eglplatform.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-egl-core.h>
 #include <xkbcommon/xkbcommon.h>
+#endif
 
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
@@ -214,7 +219,7 @@ void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
 }
 
 void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
-  eglSwapBuffers(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface);
+  egl_swap_buffers(wm, window_id);
 }
 
 void glps_wm_window_set_resize_callback(
@@ -259,70 +264,6 @@ void glps_wm_window_set_close_callback(
   wm->callbacks.window_close_data = data;
 }
 
-static void _create_ctx(glps_WindowManager *wm) {
-  static const EGLint context_attribs[] = {
-      EGL_CONTEXT_MAJOR_VERSION,
-      4,
-      EGL_CONTEXT_MINOR_VERSION,
-      5,
-      EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR,
-      EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR,
-      EGL_NONE};
-
-  wm->egl_ctx->ctx = eglCreateContext(wm->egl_ctx->dpy, wm->egl_ctx->conf,
-                                      EGL_NO_CONTEXT, context_attribs);
-  if (wm->egl_ctx->ctx == EGL_NO_CONTEXT) {
-    fprintf(stderr, "Failed to create EGL context\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
-static void _init_egl(glps_WindowManager *wm) {
-  wm->egl_ctx = malloc(sizeof(glps_EGLContext));
-
-  EGLint config_attribs[] = {EGL_SURFACE_TYPE,
-                             EGL_WINDOW_BIT,
-                             EGL_RED_SIZE,
-                             8,
-                             EGL_GREEN_SIZE,
-                             8,
-                             EGL_BLUE_SIZE,
-                             8,
-                             EGL_ALPHA_SIZE,
-                             8,
-                             EGL_RENDERABLE_TYPE,
-                             EGL_OPENGL_BIT,
-                             EGL_NONE};
-
-  EGLint major, minor, n;
-
-  wm->egl_ctx->dpy =
-      eglGetDisplay((EGLNativeDisplayType)wm->wayland_ctx->wl_display);
-  assert(wm->egl_ctx->dpy);
-
-  if (!eglInitialize(wm->egl_ctx->dpy, &major, &minor)) {
-    LOG_ERROR("Failed to initialize EGL");
-    exit(EXIT_FAILURE);
-  }
-
-  LOG_INFO("EGL initialized successfully (version %d.%d)", major, minor);
-
-  if (!eglChooseConfig(wm->egl_ctx->dpy, config_attribs, &wm->egl_ctx->conf, 1,
-                       &n) ||
-      n != 1) {
-    LOG_ERROR("Failed to choose a valid EGL config");
-    exit(EXIT_FAILURE);
-  }
-
-  if (!eglBindAPI(EGL_OPENGL_API)) {
-    LOG_ERROR("Failed to bind OpenGL API");
-    exit(EXIT_FAILURE);
-  }
-  EGLint error = eglGetError();
-  if (error != EGL_SUCCESS) {
-    LOG_ERROR("EGL error: %x", error);
-  }
-}
 glps_WindowManager *glps_wm_init(void) {
 
   glps_WindowManager *wm = malloc(sizeof(glps_WindowManager));
@@ -332,80 +273,11 @@ glps_WindowManager *glps_wm_init(void) {
     return NULL;
   }
 #ifdef GLPS_USE_WAYLAND
-
-  wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
-  if (!wm->windows) {
-    LOG_ERROR("Failed to allocate memory for windows array");
-    free(wm);
-    return NULL;
-  }
-
-  wm->wayland_ctx = malloc(sizeof(glps_WaylandContext));
-  *wm->wayland_ctx = (glps_WaylandContext){0};
-  if (!wm->wayland_ctx) {
-    LOG_ERROR("Failed to allocate memory for Wayland context");
-    free(wm->windows);
-    free(wm);
-    return NULL;
-  }
-
-  wm->window_count = 0;
-  wm->wayland_ctx->wl_touch = NULL;
-  wm->wayland_ctx->wl_pointer = NULL;
-  wm->wayland_ctx->wl_keyboard = NULL;
-  wm->wayland_ctx->xkb_state = NULL;
-  wm->wayland_ctx->xkb_keymap = NULL;
-  wm->wayland_ctx->xkb_context = NULL;
-  wm->wayland_ctx->decoration_manager = NULL;
-  wm->wayland_ctx->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-
-  wm->wayland_ctx->wl_display = wl_display_connect(NULL);
-  if (!wm->wayland_ctx->wl_display) {
-    LOG_ERROR("Failed to connect to Wayland display");
-    free(wm->wayland_ctx);
-    free(wm->windows);
-    free(wm);
-    return NULL;
-  }
-
-  wm->wayland_ctx->wl_registry =
-      wl_display_get_registry(wm->wayland_ctx->wl_display);
-  if (!wm->wayland_ctx->wl_registry) {
-    LOG_ERROR("Failed to get Wayland registry");
-    wl_display_disconnect(wm->wayland_ctx->wl_display);
-    free(wm->wayland_ctx);
-    free(wm->windows);
-    free(wm);
-    return NULL;
-  }
-
-  wl_registry_add_listener(wm->wayland_ctx->wl_registry, &registry_listener,
-                           wm);
-
-  wl_display_roundtrip(wm->wayland_ctx->wl_display);
-
-  if (wm->wayland_ctx->xdg_wm_base) {
-    xdg_wm_base_add_listener(wm->wayland_ctx->xdg_wm_base,
-                             &xdg_wm_base_listener, NULL);
-  } else {
-    LOG_ERROR("xdg_wm_base protocol not supported by compositor");
-  }
-
-  if (!wm->wayland_ctx->decoration_manager) {
-    LOG_ERROR("xdg-decoration protocol not supported by compositor");
-  }
-
-  if (!wm->wayland_ctx->wl_compositor || !wm->wayland_ctx->xdg_wm_base) {
-    LOG_ERROR("Failed to retrieve Wayland compositor or xdg_wm_base");
-    wl_registry_destroy(wm->wayland_ctx->wl_registry);
-    wl_display_disconnect(wm->wayland_ctx->wl_display);
-    free(wm->wayland_ctx);
-    free(wm->windows);
-    free(wm);
-    return NULL;
-  }
-
-  _init_egl(wm);
+  if(!glps_wl_init(wm)) {
+      LOG_ERROR("Wayland init failed. exiting...");
+      exit(EXIT_FAILURE);
+        }
+  egl_init(wm);
 
 #elif defined(GLPS_USE_WIN32)
   LOG_CRITICAL("USING WIN32");
@@ -416,20 +288,7 @@ glps_WindowManager *glps_wm_init(void) {
 }
 
 void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
-  if (!eglMakeCurrent(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface,
-                      wm->windows[window_id]->egl_surface, wm->egl_ctx->ctx)) {
-    EGLint error = eglGetError();
-    LOG_ERROR("eglMakeCurrent failed: 0x%x", error);
-    if (error == EGL_BAD_DISPLAY)
-      LOG_ERROR("Invalid EGL display");
-    if (error == EGL_BAD_SURFACE)
-      LOG_ERROR("Invalid draw or read surface");
-    if (error == EGL_BAD_CONTEXT)
-      LOG_ERROR("Invalid EGL context");
-    if (error == EGL_BAD_MATCH)
-      LOG_ERROR("Context or surface attributes mismatch");
-    exit(EXIT_FAILURE);
-  }
+  egl_make_ctx_current(wm, window_id);
 }
 
 void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
@@ -446,110 +305,15 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
   *height = window->properties.height;
 }
 
-void *glps_get_proc_addr() { return eglGetProcAddress; }
+void *glps_get_proc_addr() { return egl_get_proc_addr(); }
 
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height) {
-  glps_WaylandWindow *window = malloc(sizeof(glps_WaylandWindow));
-
-  window->wl_surface =
-      wl_compositor_create_surface(wm->wayland_ctx->wl_compositor);
-  if (!window->wl_surface) {
-    LOG_ERROR("Failed to create wayland surface");
-    exit(EXIT_FAILURE);
+  ssize_t window_id = glps_wl_window_create(wm, title, width, height);
+  if (window_id < 0) {
+    LOG_ERROR("Window creation failed.");
   }
-
-  window->properties.width = width;
-  window->properties.height = height;
-
-  window->fps_start_time = (struct timespec){0};
-  window->fps_is_init = false;
-
-  window->xdg_surface = xdg_wm_base_get_xdg_surface(
-      wm->wayland_ctx->xdg_wm_base, window->wl_surface);
-
-  if (!window->xdg_surface) {
-    LOG_ERROR("Failed to create XDG surface");
-    exit(EXIT_FAILURE);
-  }
-
-  if (xdg_surface_add_listener(window->xdg_surface, &xdg_surface_listener,
-                               wm) == -1) {
-    LOG_ERROR("Failed to add XDG surface listener");
-    exit(EXIT_FAILURE);
-  }
-
-  window->xdg_toplevel = xdg_surface_get_toplevel(window->xdg_surface);
-  if (!window->xdg_toplevel) {
-    LOG_ERROR("Failed to create toplevel");
-    exit(EXIT_FAILURE);
-  }
-
-  xdg_toplevel_set_title(window->xdg_toplevel, title);
-  strcpy(window->properties.title, title);
-  xdg_toplevel_add_listener(window->xdg_toplevel, &toplevel_listener, wm);
-  if (wm->wayland_ctx->decoration_manager != NULL) {
-
-    window->zxdg_toplevel_decoration =
-        zxdg_decoration_manager_v1_get_toplevel_decoration(
-            wm->wayland_ctx->decoration_manager, window->xdg_toplevel);
-    zxdg_toplevel_decoration_v1_set_mode(
-        window->zxdg_toplevel_decoration,
-        ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-  }
-
-  wl_surface_commit(window->wl_surface);
-
-  wl_display_roundtrip(wm->wayland_ctx->wl_display);
-
-  window->egl_window = wl_egl_window_create(
-      window->wl_surface, window->properties.width, window->properties.height);
-  if (!window->egl_window) {
-    LOG_ERROR("Failed to create EGL window");
-    exit(EXIT_FAILURE);
-  }
-
-  window->egl_surface =
-      eglCreateWindowSurface(wm->egl_ctx->dpy, wm->egl_ctx->conf,
-                             (NativeWindowType)window->egl_window, NULL);
-  if (window->egl_surface == EGL_NO_SURFACE) {
-    LOG_ERROR("Failed to create EGL surface");
-    exit(EXIT_FAILURE);
-  }
-
-  wm->windows[wm->window_count] = window;
-
-  if (wm->window_count == 0) {
-    _create_ctx(wm);
-    glps_wm_set_window_ctx_curr(wm, 0);
-  }
-
-  // setup frame callback
-  frame_callback_args *frame_args =
-      (frame_callback_args *)malloc(sizeof(frame_callback_args));
-  window->frame_callback = wl_surface_frame(window->wl_surface);
-  frame_args->wm = wm;
-  frame_args->window_id = wm->window_count;
-  window->frame_args = (void *)frame_args;
-
-  wl_callback_add_listener(window->frame_callback, &frame_callback_listener,
-                           frame_args);
-
-  return wm->window_count++;
-}
-
-static void _cleanup_egl(glps_WindowManager *wm) {
-
-  if (wm->egl_ctx->ctx) {
-    eglDestroyContext(wm->egl_ctx->dpy, wm->egl_ctx->ctx);
-    wm->egl_ctx->ctx = EGL_NO_CONTEXT;
-  }
-  if (wm->egl_ctx->dpy) {
-    eglTerminate(wm->egl_ctx->dpy);
-    wm->egl_ctx->dpy = EGL_NO_DISPLAY;
-  }
-  free(wm->egl_ctx);
-  wm->egl_ctx = NULL;
+  return window_id;
 }
 
 void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
@@ -559,44 +323,7 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
     return;
   }
 
-  glps_WaylandWindow *window = wm->windows[window_id];
-  if (window->frame_args != NULL) {
-    free(window->frame_args);
-    window->frame_args = NULL;
-  }
-
-  if (window->zxdg_toplevel_decoration != NULL) {
-    zxdg_toplevel_decoration_v1_destroy(window->zxdg_toplevel_decoration);
-    window->zxdg_toplevel_decoration = NULL;
-  }
-
-  if (window->frame_callback != NULL) {
-    wl_callback_destroy(window->frame_callback);
-    window->frame_callback = NULL;
-  }
-
-  eglDestroySurface(wm->egl_ctx->dpy, window->egl_surface);
-  wl_egl_window_destroy(window->egl_window);
-
-  xdg_toplevel_destroy(window->xdg_toplevel);
-  xdg_surface_destroy(window->xdg_surface);
-  wl_surface_destroy(window->wl_surface);
-
-  free(window);
-
-  wm->windows[window_id] = NULL;
-
-  for (size_t i = window_id; i < wm->window_count - 1; ++i) {
-    wm->windows[i] = wm->windows[i + 1];
-  }
-  if (wm->window_count > 0)
-    wm->window_count--;
-
-  if (wm->window_count == 0) {
-    LOG_INFO("All windows destroyed. Exiting program.");
-    glps_wm_destroy(wm);
-   // exit(EXIT_SUCCESS);
-  }
+  glps_wl_window_destroy(wm, window_id);
 }
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
 
@@ -622,29 +349,11 @@ double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
 }
 
 bool glps_wm_should_close(glps_WindowManager *wm) {
-  if (wl_display_dispatch(wm->wayland_ctx->wl_display) == -1)
-    return true;
-  else if (wm->window_count == 0)
-    return true;
-
-  return false;
+  return glps_wl_should_close(wm);
 }
 
-void glps_wm_destroy(glps_WindowManager *wm) {
+void glps_wm_destroy(glps_WindowManager *wm) { glps_wl_destroy(wm); }
 
-  if (wm == NULL) {
-    return;
-  }
-
-  for (size_t i = 0; i < wm->window_count; ++i) {
-    if (wm->windows[i] != NULL) {
-      glps_wm_window_destroy(wm, i);
-    }
-  }
-  _cleanup_egl(wm);
-  _cleanup_wl(wm);
-  if (wm != NULL) {
-    free(wm);
-    wm = NULL;
-  }
+void glps_window_update(glps_WindowManager *wm, size_t window_id) {
+  wl_update(wm, window_id);
 }

@@ -1,6 +1,8 @@
 #ifndef GLPS_WAYLAND_H
 #define GLPS_WAYLAND_H
 
+#ifdef GLPS_USE_WAYLAND
+
 #include "glps_common.h"
 
 // Wayland core functions
@@ -19,7 +21,7 @@ ssize_t __get_window_id_from_xdg_toplevel(glps_WindowManager *wm,
  * @param wm Pointer to the GLPS Window Manager.
  * @param window_id ID of the window to update.
  */
- void glps_wl_update(glps_WindowManager *wm, size_t window_id);
+ void wl_update(glps_WindowManager *wm, size_t window_id);
 
 // Pointer event handlers
 void wl_pointer_enter(void *data, struct wl_pointer *wl_pointer,
@@ -131,8 +133,16 @@ void handle_toplevel_close(void *data, struct xdg_toplevel *toplevel);
 void xdg_surface_configure(void *data, struct xdg_surface *xdg_surface,
                            uint32_t serial);
 
-// Cleanup and resource management
-void _cleanup_wl(glps_WindowManager *wm);
+bool glps_wl_init(glps_WindowManager* wm);
+
+ssize_t glps_wl_window_create(glps_WindowManager *wm, const char *title,
+                             int width, int height);
+
+bool glps_wl_should_close(glps_WindowManager *wm);
+
+void glps_wl_window_destroy(glps_WindowManager *wm, size_t window_id);
+
+void glps_wl_destroy();
 
 extern struct xdg_wm_base_listener xdg_wm_base_listener;
 
@@ -157,4 +167,7 @@ extern struct wl_data_device_listener data_device_listener;
 extern struct wl_registry_listener registry_listener;
 
 extern struct wl_callback_listener frame_callback_listener;
+
+#endif
+
 #endif

@@ -16,24 +16,33 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
-#include <wayland-client-protocol.h>
-#include <wayland-client.h>
-#include <xkbcommon/xkbcommon.h>
+
 
 // XDG Headers
+#include "utils/logger/pico_logger.h"
+#include <stdlib.h>
+
+
+// Windows
+#ifdef GLPS_USE_WIN32
+#include <windows.h>
+#endif
+
+// Wayland
+#ifdef GLPS_USE_WAYLAND
 #include "xdg/wlr-data-control-unstable-v1.h"
 #include "xdg/xdg-decorations.h"
 #include "xdg/xdg-dialog.h"
 #include "xdg/xdg-shell.h"
-
-#include "utils/logger/pico_logger.h"
-#include <stdlib.h>
-
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <wayland-egl.h>
-#define MAX_WINDOWS 100
+#include <wayland-client-protocol.h>
+#include <wayland-client.h>
+#include <xkbcommon/xkbcommon.h>
+#endif
 
+#define MAX_WINDOWS 100
 
 /**
  * @enum pointer_event_mask
@@ -133,8 +142,6 @@ struct touch_event {
   size_t window_id;
 };
 
-
-
 /**
  * @struct glps_EGLContext
  * @brief EGL context for rendering.
@@ -164,7 +171,7 @@ typedef struct {
   struct xdg_toplevel *xdg_toplevel; /**< XDG toplevel. */
   struct wl_surface *wl_surface;     /**< Wayland surface. */
 
-  EGLSurface egl_surface; /**< EGL surface. */
+  EGLSurface egl_surface;           /**< EGL surface. */
   struct wl_egl_window *egl_window; /**< Wayland EGL window. */
   glps_WindowProperties properties; /**< Window properties. */
   struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration;
@@ -175,6 +182,17 @@ typedef struct {
   void *frame_args;
   uint32_t serial;
 } glps_WaylandWindow;
+
+typedef struct {
+  HWND hwnd;
+  HDC hdc;
+  HGLRC hglrc;
+  glps_WindowProperties properties;
+} glps_Win32Window;
+
+typedef struct {
+  WNDCLASSEX wc;
+} glps_Win32Context;
 
 /**
  * @struct glps_WaylandContext
@@ -212,16 +230,15 @@ struct clipboard_data {
   char buff[1024];
 };
 
-struct glps_debug
-{
-    bool enable_fps_counter;
+struct glps_debug {
+  bool enable_fps_counter;
 };
 
 struct glps_Callback {
-  glps_WaylandContext *wayland_ctx;         /**< Wayland context. */
-  glps_EGLContext *egl_ctx;                 /**< EGL context. */
-  char font_path[256];                      /**< Path to the font file. */
-  size_t window_count;                      /**< Number of managed windows. */
+  glps_WaylandContext *wayland_ctx; /**< Wayland context. */
+  glps_EGLContext *egl_ctx;         /**< EGL context. */
+  char font_path[256];              /**< Path to the font file. */
+  size_t window_count;              /**< Number of managed windows. */
   bool inhibit_reset;           /**< Indicates if reset should be inhibited. */
   unsigned int selected_color;  /**< Selected color value. */
   glps_WaylandWindow **windows; /**< Array of Wayland windows. */
@@ -281,13 +298,24 @@ struct glps_Callback {
  * @brief Represents the manager for GLPS windows.
  */
 typedef struct {
-  glps_WaylandContext *wayland_ctx;         /**< Wayland context. */
-  glps_EGLContext *egl_ctx;                 /**< EGL context. */
-  char font_path[256];                      /**< Path to the font file. */
-  size_t window_count;                      /**< Number of managed windows. */
-  bool inhibit_reset;           /**< Indicates if reset should be inhibited. */
-  unsigned int selected_color;  /**< Selected color value. */
-  glps_WaylandWindow **windows; /**< Array of Wayland windows. */
+
+#ifdef GLPS_USE_WAYLAND
+  glps_WaylandContext *wayland_ctx; /**< Wayland context. */
+  glps_WaylandWindow **windows;     /**< Array of Wayland window pointers. */
+
+#endif
+
+#ifdef GLPS_USE_WIN32
+  glps_Win32Context *win32_ctx; /**< Win32 Context */
+  glps_Win32Window **windows;   /**< Array of Win32 window pointers. */
+  WNDCLASSEX wc;
+#endif
+
+  glps_EGLContext *egl_ctx;    /**< EGL context. */
+  char font_path[256];         /**< Path to the font file. */
+  size_t window_count;         /**< Number of managed windows. */
+  bool inhibit_reset;          /**< Indicates if reset should be inhibited. */
+  unsigned int selected_color; /**< Selected color value. */
   struct touch_event touch_event;     /**< Current touch event data. */
   struct pointer_event pointer_event; /**< Current pointer event data. */
   struct clipboard_data clipboard;    /**< Current clipboard data. */

@@ -332,7 +332,7 @@ glps_WindowManager *glps_wm_init(void) {
     return NULL;
   }
 #ifdef GLPS_USE_WAYLAND
-  
+
   wm->windows = malloc(sizeof(glps_WaylandWindow *) * MAX_WINDOWS);
   if (!wm->windows) {
     LOG_ERROR("Failed to allocate memory for windows array");
@@ -595,7 +595,7 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
   if (wm->window_count == 0) {
     LOG_INFO("All windows destroyed. Exiting program.");
     glps_wm_destroy(wm);
-    exit(EXIT_SUCCESS);
+   // exit(EXIT_SUCCESS);
   }
 }
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {

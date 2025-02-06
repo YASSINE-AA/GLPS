@@ -23,12 +23,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     add_definitions(-DGLPS_USE_WIN32)
 
     set(SOURCES
+        src/glps_wgl_context.c
         src/glps_win32.c
         src/glps_window_manager.c
         src/utils/logger/pico_logger.c
     )
 
     set(HEADERS
+        include/glps_wgl_context.h
         include/glps_window_manager.h
         include/glps_win32.h
         include/glps_common.h
@@ -46,7 +48,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     )
 
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32 gdi32)
+    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32 )
 message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
 
     # Ensure DLL and import library (.dll.a) are placed in the correct directory
@@ -77,7 +79,7 @@ elseif(UNIX AND NOT APPLE)
         set(HEADERS
             include/glps_wayland.h
             include/glps_window_manager.h
-            include/egl_context.h
+            include/glps_egl_context.h
             include/glps_common.h
             internal/utils/logger/pico_logger.h
             internal/xdg/wlr-data-control-unstable-v1.h

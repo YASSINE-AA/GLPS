@@ -10,5 +10,6 @@ ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title, int 
 
 void glps_win32_destroy(glps_WindowManager *wm);
 
+HDC glps_win32_get_window_hdc(glps_WindowManager* wm, size_t window_id);
 
 #endif

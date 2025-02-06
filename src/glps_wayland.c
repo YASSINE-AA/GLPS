@@ -1,6 +1,6 @@
 
 #ifdef GLPS_USE_WAYLAND
-#include <egl_context.h>
+#include <glps_egl_context.h>
 #include <glps_wayland.h>
 
 void xdg_wm_base_ping(void *data, struct xdg_wm_base *xdg_wm_base,
@@ -1267,8 +1267,8 @@ ssize_t glps_wl_window_create(glps_WindowManager *wm, const char *title,
   wm->windows[wm->window_count] = window;
 
   if (wm->window_count == 0) {
-    egl_create_ctx(wm);
-    egl_make_ctx_current(wm, 0);
+    glps_egl_create_ctx(wm);
+    glps_egl_make_ctx_current(wm, 0);
   }
 
   // setup frame callback
@@ -1299,7 +1299,7 @@ void glps_wl_destroy(glps_WindowManager *wm) {
     return;
   }
 
-  egl_destroy(wm);
+  glps_egl_destroy(wm);
   _cleanup_wl(wm);
   if (wm != NULL) {
     free(wm);

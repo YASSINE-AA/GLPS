@@ -1,9 +1,9 @@
 
 #ifdef GLPS_USE_WAYLAND
 
-#include <egl_context.h>
+#include <glps_egl_context.h>
 
-void egl_init(glps_WindowManager *wm) {
+void glps_egl_init(glps_WindowManager *wm) {
 
   wm->egl_ctx = malloc(sizeof(glps_EGLContext));
 
@@ -51,7 +51,7 @@ void egl_init(glps_WindowManager *wm) {
   }
 }
 
-void egl_create_ctx(glps_WindowManager *wm) {
+void glps_egl_create_ctx(glps_WindowManager *wm) {
   static const EGLint context_attribs[] = {
       EGL_CONTEXT_MAJOR_VERSION,
       4,
@@ -69,7 +69,7 @@ void egl_create_ctx(glps_WindowManager *wm) {
   }
 }
 
-void egl_make_ctx_current(glps_WindowManager *wm, size_t window_id) {
+void glps_egl_make_ctx_current(glps_WindowManager *wm, size_t window_id) {
   if (!eglMakeCurrent(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface,
                       wm->windows[window_id]->egl_surface, wm->egl_ctx->ctx)) {
     EGLint error = eglGetError();
@@ -86,9 +86,9 @@ void egl_make_ctx_current(glps_WindowManager *wm, size_t window_id) {
   }
 }
 
-void *egl_get_proc_addr() { return eglGetProcAddress; }
+void *glps_egl_get_proc_addr() { return eglGetProcAddress; }
 
-void egl_destroy(glps_WindowManager *wm) {
+void glps_egl_destroy(glps_WindowManager *wm) {
 
   if (wm->egl_ctx->ctx) {
     eglDestroyContext(wm->egl_ctx->dpy, wm->egl_ctx->ctx);
@@ -102,7 +102,7 @@ void egl_destroy(glps_WindowManager *wm) {
   wm->egl_ctx = NULL;
 }
 
-void egl_swap_buffers(glps_WindowManager *wm, size_t window_id) {
+void glps_egl_swap_buffers(glps_WindowManager *wm, size_t window_id) {
   eglSwapBuffers(wm->egl_ctx->dpy, wm->windows[window_id]->egl_surface);
 }
 

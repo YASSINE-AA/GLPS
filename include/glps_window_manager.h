@@ -250,6 +250,6 @@ void glps_wm_start_drag_n_drop(
 /* ======= Utilities ======= */
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id);
 
-void *glps_get_proc_addr(void);
+void *glps_get_proc_addr(const char *name) ;
 
 #endif // GLPS_WINDOW_MANAGER_H

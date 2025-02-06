@@ -6,6 +6,7 @@
 // *=========== WIN32 ===========* //
 #ifdef GLPS_USE_WIN32
 #include <glps_win32.h>
+#include <glps_wgl_context.h>
 #include <windows.h>
 #endif
 
@@ -13,7 +14,8 @@
 #ifdef GLPS_USE_WAYLAND
 #include "glps_wayland.h"
 #include <EGL/eglplatform.h>
-#include <egl_context.h>
+#include <glps_egl_context.h>
+#include <glps_wgl_context.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-egl-core.h>
@@ -234,7 +236,11 @@ void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
 
 void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
 #ifdef GLPS_USE_WAYLAND
-  egl_swap_buffers(wm, window_id);
+  glps_egl_swap_buffers(wm, window_id);
+#endif
+
+#ifdef GLPS_USE_WIN32
+  glps_wgl_swap_buffers(wm, window_id);
 #endif
 }
 
@@ -293,7 +299,7 @@ glps_WindowManager *glps_wm_init(void) {
     LOG_ERROR("Wayland init failed. exiting...");
     exit(EXIT_FAILURE);
   }
-  egl_init(wm);
+  glps_egl_init(wm);
 
 #elif defined(GLPS_USE_WIN32)
   glps_win32_init(wm);
@@ -304,7 +310,11 @@ glps_WindowManager *glps_wm_init(void) {
 
 void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
 #ifdef GLPS_USE_WAYLAND
-  egl_make_ctx_current(wm, window_id);
+  glps_egl_make_ctx_current(wm, window_id);
+#endif
+
+#ifdef GLPS_USE_WIN32
+  glps_wgl_make_ctx_current(wm, window_id);
 #endif
 }
 
@@ -323,12 +333,13 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
 #endif
 }
 
-void *glps_get_proc_addr() {
+void *glps_get_proc_addr(const char* name) {
 #ifdef GLPS_USE_WAYLAND
-  return egl_get_proc_addr();
+  return glps_egl_get_proc_addr(name);
 #endif
-
-  return NULL;
+#ifdef GLPS_USE_WIN32
+    return glps_wgl_get_proc_addr(name);
+#endif
 }
 
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
@@ -413,7 +424,7 @@ void glps_wm_destroy(glps_WindowManager *wm) {
 #endif
 
 #ifdef GLPS_USE_WIN32
-    glps_win32_destroy(wm);
+  glps_win32_destroy(wm);
 #endif
 }
 
@@ -422,5 +433,9 @@ void glps_window_update(glps_WindowManager *wm, size_t window_id) {
 #ifdef GLPS_USE_WAYLAND
   wl_update(wm, window_id);
 
+#endif
+
+#ifdef GLPS_USE_WIN32
+  UpdateWindow(wm->windows[window_id]->hwnd);
 #endif
 }

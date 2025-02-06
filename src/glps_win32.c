@@ -1,5 +1,16 @@
 #include <glps_common.h>
 
+ssize_t __get_window_id_from_hwnd(glps_WindowManager *wm, HWND hwnd) {
+
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (wm->windows[i]->hwnd == hwnd) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {
   glps_WindowManager *wm =
@@ -13,7 +24,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
         if (wm->windows[i]->hwnd == hwnd) {
 
           wglMakeCurrent(NULL, NULL);
-          wglDeleteContext(wm->windows[i]->hglrc);
+          wglDeleteContext(wm->win32_ctx->hglrc);
           ReleaseDC(wm->windows[i]->hwnd, wm->windows[i]->hdc);
 
           free(wm->windows[i]);
@@ -35,17 +46,15 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
   case WM_PAINT: {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
+    ssize_t window_id = __get_window_id_from_hwnd(wm, hwnd);
 
-    for (size_t i = 0; i < wm->window_count; i++) {
-      if (wm->windows[i]->hwnd == hwnd) {
-        wglMakeCurrent(wm->windows[i]->hdc, wm->windows[i]->hglrc);
+    if (window_id < 0) {
+      EndPaint(hwnd, &ps);
+    }
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        SwapBuffers(wm->windows[i]->hdc);
-        break;
-      }
+    if (wm->callbacks.window_frame_update_callback) {
+      wm->callbacks.window_frame_update_callback(
+          (size_t)window_id, wm->callbacks.window_frame_update_data);
     }
 
     EndPaint(hwnd, &ps);
@@ -180,17 +189,20 @@ ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title,
     DestroyWindow(win32_window->hwnd);
     return -1;
   }
+  if(wm->window_count == 0)
+      {
+          wm->win32_ctx->hglrc = wglCreateContext(win32_window->hdc);
+          if (!wm->win32_ctx->hglrc) {
+            MessageBox(NULL, "wglCreateContext failed!", "Error!",
+                       MB_ICONEXCLAMATION | MB_OK);
+            ReleaseDC(win32_window->hwnd, win32_window->hdc);
+            DestroyWindow(win32_window->hwnd);
+            return -1;
+          }
+      }
 
-  win32_window->hglrc = wglCreateContext(win32_window->hdc);
-  if (!win32_window->hglrc) {
-    MessageBox(NULL, "wglCreateContext failed!", "Error!",
-               MB_ICONEXCLAMATION | MB_OK);
-    ReleaseDC(win32_window->hwnd, win32_window->hdc);
-    DestroyWindow(win32_window->hwnd);
-    return -1;
-  }
 
-  wglMakeCurrent(win32_window->hdc, win32_window->hglrc);
+  wglMakeCurrent(win32_window->hdc, wm->win32_ctx->hglrc);
 
   snprintf(win32_window->properties.title,
            sizeof(win32_window->properties.title), "%s", title);
@@ -222,4 +234,9 @@ void glps_win32_destroy(glps_WindowManager *wm) {
     free(wm);
     wm = NULL;
   }
+}
+
+HDC glps_win32_get_window_hdc(glps_WindowManager* wm, size_t window_id)
+{
+    return wm->windows[window_id]->hdc;
 }

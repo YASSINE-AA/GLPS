@@ -17,7 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <utils/logger/pico_logger.h>
+#include "../internal/utils/logger/pico_logger.h"
 #include <stdlib.h>
 
 // Windows
@@ -271,12 +271,13 @@ typedef struct {
 typedef struct {
   HWND hwnd;
   HDC hdc;
-  HGLRC hglrc;
   glps_WindowProperties properties;
 } glps_Win32Window;
 
 typedef struct {
   WNDCLASSEX wc;
+  HGLRC hglrc;
+
 } glps_Win32Context;
 
 #endif

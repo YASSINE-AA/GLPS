@@ -58,9 +58,11 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
   return 0;
 }
 
-void win32_init_window_class(glps_WindowManager *wm, const char *class_name) {
+static void __init_window_class(glps_WindowManager *wm,
+                                const char *class_name) {
+  HINSTANCE hInstance = GetModuleHandle(NULL);
 
-  wm->wc = {0};
+  wm->wc = (WNDCLASSEX){0};
   wm->wc.cbSize = sizeof(WNDCLASSEX);
   wm->wc.style = 0;
   wm->wc.lpfnWndProc = WndProc;
@@ -77,8 +79,30 @@ void win32_init_window_class(glps_WindowManager *wm, const char *class_name) {
   if (!RegisterClassEx(&wm->wc)) {
     MessageBox(NULL, "Window Registration Failed!", "Error!",
                MB_ICONEXCLAMATION | MB_OK);
-    return 0;
+    return;
   }
+}
+
+void glps_win32_init(glps_WindowManager *wm) {
+  __init_window_class(wm, "glpsWindowClass");
+
+  wm->windows = malloc(sizeof(glps_Win32Window *) * MAX_WINDOWS);
+  if (!wm->windows) {
+    LOG_ERROR("Failed to allocate memory for windows array");
+    free(wm);
+    return;
+  }
+
+  wm->win32_ctx = malloc(sizeof(glps_Win32Context));
+  *wm->win32_ctx = (glps_Win32Context){0};
+  if (!wm->win32_ctx) {
+    LOG_ERROR("Failed to allocate memory for WIN32 context");
+    free(wm->windows);
+    free(wm);
+    return;
+  }
+
+  wm->window_count = 0;
 }
 
 static BOOL SetPixelFormatForOpenGL(HDC hdc) {
@@ -126,9 +150,9 @@ static BOOL SetPixelFormatForOpenGL(HDC hdc) {
   return TRUE;
 }
 
-void win32_window_create(glps_WindowManager *wm, HINSTANCE hInstance,
-                         const char *class_name, int nCmdShow,
-                         const char *title, int width, int height) {
+ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title,
+                                 int width, int height) {
+  HINSTANCE hInstance = GetModuleHandle(NULL);
 
   glps_Win32Window *win32_window =
       (glps_Win32Window *)malloc(sizeof(glps_Win32Window));
@@ -136,25 +160,25 @@ void win32_window_create(glps_WindowManager *wm, HINSTANCE hInstance,
   if (win32_window == NULL) {
     MessageBox(NULL, "Win32 Window allocation failed", "Error!",
                MB_ICONEXCLAMATION | MB_OK);
-    return;
+    return -1;
   }
 
-  win32_window->hwnd =
-      CreateWindowEx(0, class_name, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
-                     CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
+  win32_window->hwnd = CreateWindowEx(
+      0, wm->wc.lpszClassName, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+      CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
 
   if (win32_window->hwnd == NULL) {
     MessageBox(NULL, "CreateWindowEx failed!", "Error!",
                MB_ICONEXCLAMATION | MB_OK);
-    return;
+    return -1;
   }
 
-  win32_window->hdc = GetDC(hwnd);
+  win32_window->hdc = GetDC(win32_window->hwnd);
 
   if (!SetPixelFormatForOpenGL(win32_window->hdc)) {
     ReleaseDC(win32_window->hwnd, win32_window->hdc);
     DestroyWindow(win32_window->hwnd);
-    return;
+    return -1;
   }
 
   win32_window->hglrc = wglCreateContext(win32_window->hdc);
@@ -162,21 +186,40 @@ void win32_window_create(glps_WindowManager *wm, HINSTANCE hInstance,
     MessageBox(NULL, "wglCreateContext failed!", "Error!",
                MB_ICONEXCLAMATION | MB_OK);
     ReleaseDC(win32_window->hwnd, win32_window->hdc);
-    DestroyWindow(hwnd);
-    return;
+    DestroyWindow(win32_window->hwnd);
+    return -1;
   }
 
   wglMakeCurrent(win32_window->hdc, win32_window->hglrc);
 
-  snprintf(window->properties.title, sizeof(window->properties.title), "%s",
-           title);
+  snprintf(win32_window->properties.title,
+           sizeof(win32_window->properties.title), "%s", title);
 
-  window->properties.width = width;
-  window->properties.height = height;
-  wm->windows[wm->window_count] = window;
-  wm->window_count++;
+  win32_window->properties.width = width;
+  win32_window->properties.height = height;
+  wm->windows[wm->window_count] = win32_window;
 
   SetWindowLongPtr(win32_window->hwnd, GWLP_USERDATA, (LONG_PTR)wm);
-  ShowWindow(win32_window->hwnd, nCmdShow);
+  ShowWindow(win32_window->hwnd, SW_SHOW);
   UpdateWindow(win32_window->hwnd);
+  return wm->window_count++;
+}
+
+void glps_win32_destroy(glps_WindowManager *wm) {
+  for (size_t i = 0; i < wm->window_count; ++i) {
+    if (wm->windows[i] != NULL) {
+      free(wm->windows[i]);
+      wm->windows[i] = NULL;
+    }
+  }
+
+  if (wm->windows != NULL) {
+    free(wm->windows);
+    wm->windows = NULL;
+  }
+
+  if (wm != NULL) {
+    free(wm);
+    wm = NULL;
+  }
 }

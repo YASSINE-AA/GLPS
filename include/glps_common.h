@@ -13,10 +13,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "utils/logger/pico_logger.h"
+#include <utils/logger/pico_logger.h>
 #include <stdlib.h>
 
 // Windows

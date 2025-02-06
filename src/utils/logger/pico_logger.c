@@ -26,12 +26,16 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdarg.h>
+#ifdef GLPS_USE_WAYLAND
+
 #include <execinfo.h>
+static struct timespec start_time = {0};
+
+#endif
 #include <unistd.h>
 
 static bool logging_enabled = true;
 static DebugLevel min_log_level = DEBUG_LEVEL_INFO;
-static struct timespec start_time = {0};
 
 typedef struct LogEntry
 {
@@ -161,6 +165,7 @@ void save_log_file(const char *path)
 
 void print_stack_trace(void)
 {
+    #ifdef GLPS_USE_WAYLAND
     void *buffer[10];
     int size = backtrace(buffer, 10);
     char **symbols = backtrace_symbols(buffer, size);
@@ -171,6 +176,7 @@ void print_stack_trace(void)
         printf("%s\n", symbols[i]);
     }
     free(symbols);
+    #endif
 }
 
 void dump_memory(const char *label, const void *buffer, size_t size)
@@ -191,29 +197,53 @@ void dump_memory(const char *label, const void *buffer, size_t size)
     }
 }
 
+
+
+#ifdef GLPS_USE_WIN32
+#include <windows.h>
+#else
+#include <sys/time.h>
+#endif
+
+#ifdef GLPS_USE_WIN32
+static LARGE_INTEGER start_time;
+static LARGE_INTEGER frequency;
+#else
+static struct timespec start_time;
+#endif
+
 void log_performance(char *message)
 {
     if (message)
     {
+        #ifdef GLPS_USE_WIN32
+        if (start_time.QuadPart)
+        #else
         if (start_time.tv_nsec || start_time.tv_sec)
+        #endif
         {
-            struct timespec end;
-
+            char time_buffer[20];
             time_t raw_time;
             struct tm *time_info;
-            char time_buffer[20];
             time(&raw_time);
             time_info = localtime(&raw_time);
             strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", time_info);
 
-            clock_gettime(CLOCK_MONOTONIC, &end);
+            double time_taken;
 
-            double time_taken = (end.tv_sec - start_time.tv_sec) +
-                                (end.tv_nsec - start_time.tv_nsec) / 1e9;
+            #ifdef GLPS_USE_WIN32
+            LARGE_INTEGER end;
+            QueryPerformanceCounter(&end);
+            time_taken = (double)(end.QuadPart - start_time.QuadPart) / frequency.QuadPart;
+            #else
+            struct timespec end;
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            time_taken = (end.tv_sec - start_time.tv_sec) +
+                         (end.tv_nsec - start_time.tv_nsec) / 1e9;
+            #endif
 
             char full_log[1024];
-            printf("[%s] %sMETRICS%s Function %s took %.9f seconds to execute.\n", time_buffer, KBLU, KNRM, message, time_taken);
-
+            printf("[%s] METRICS Function %s took %.9f seconds to execute.\n", time_buffer, message, time_taken);
             snprintf(full_log, sizeof(full_log), "[%s] METRICS Function %s took %.9f seconds to execute.\n", time_buffer, message, time_taken);
             add_log_entry(full_log);
             return;
@@ -222,6 +252,11 @@ void log_performance(char *message)
     }
     else
     {
+        #ifdef GLPS_USE_WIN32
+        QueryPerformanceCounter(&start_time);
+        QueryPerformanceFrequency(&frequency);
+        #else
         clock_gettime(CLOCK_MONOTONIC, &start_time);
+        #endif
     }
 }

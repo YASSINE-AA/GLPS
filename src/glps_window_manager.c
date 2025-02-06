@@ -3,11 +3,17 @@
 #include <stdio.h>
 #include <string.h>
 
+// *=========== WIN32 ===========* //
+#ifdef GLPS_USE_WIN32
+#include <glps_win32.h>
+#include <windows.h>
+#endif
+
+// *=========== WAYLAND ===========* //
 #ifdef GLPS_USE_WAYLAND
 #include "glps_wayland.h"
-#include <egl_context.h>
-
 #include <EGL/eglplatform.h>
+#include <egl_context.h>
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <wayland-egl-core.h>
@@ -148,6 +154,7 @@ void glps_wm_set_touch_callback(
 void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
                                  char *data) {
 
+#ifdef GLPS_USE_WAYLAND
   glps_WaylandContext *context = NULL;
   if (wm == NULL || (context = __get_wl_context(wm)) == NULL) {
     LOG_ERROR("Couldn't attach data to clipboard, context is NULL.");
@@ -164,11 +171,13 @@ void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
   wl_data_source_offer(context->data_src, "text/html");
   wl_data_device_set_selection(context->data_dvc, context->data_src,
                                context->keyboard_serial);
+
+#endif
 }
 
 void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
                                 size_t data_size) {
-
+#ifdef GLPS_USE_WAYLAND
   if (wm == NULL || data == NULL) {
     LOG_ERROR("Window Manager and/or data NULL.");
     return;
@@ -177,6 +186,7 @@ void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
   memset(data, 0, data_size);
   strncpy(data, wm->clipboard.buff, data_size - 1);
   data[data_size - 1] = '\0';
+#endif
 }
 
 void glps_wm_start_drag_n_drop(
@@ -188,6 +198,7 @@ void glps_wm_start_drag_n_drop(
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
+#ifdef GLPS_USE_WAYLAND
 
   glps_WaylandContext *ctx = (glps_WaylandContext *)__get_wl_context(wm);
   if (ctx == NULL) {
@@ -212,14 +223,19 @@ void glps_wm_start_drag_n_drop(
   wl_data_device_start_drag(ctx->data_dvc, source,
                             wm->windows[origin_window_id]->wl_surface, icon,
                             wm->pointer_event.serial);
+#endif
 }
 
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
+#ifdef GLPS_USE_WAYLAND
   eglSwapInterval(wm->egl_ctx->dpy, 0);
+#endif
 }
 
 void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
+#ifdef GLPS_USE_WAYLAND
   egl_swap_buffers(wm, window_id);
+#endif
 }
 
 void glps_wm_window_set_resize_callback(
@@ -273,22 +289,23 @@ glps_WindowManager *glps_wm_init(void) {
     return NULL;
   }
 #ifdef GLPS_USE_WAYLAND
-  if(!glps_wl_init(wm)) {
-      LOG_ERROR("Wayland init failed. exiting...");
-      exit(EXIT_FAILURE);
-        }
+  if (!glps_wl_init(wm)) {
+    LOG_ERROR("Wayland init failed. exiting...");
+    exit(EXIT_FAILURE);
+  }
   egl_init(wm);
 
 #elif defined(GLPS_USE_WIN32)
-  LOG_CRITICAL("USING WIN32");
-  exit(1);
+  glps_win32_init(wm);
 #endif
 
   return wm;
 }
 
 void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
+#ifdef GLPS_USE_WAYLAND
   egl_make_ctx_current(wm, window_id);
+#endif
 }
 
 void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
@@ -298,18 +315,34 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
     LOG_ERROR("Couldn't get window dimensions. Window Manager NULL. ");
     return;
   }
-
+#ifdef GLPS_USE_WAYLAND
   glps_WaylandWindow *window = (glps_WaylandWindow *)wm->windows[window_id];
 
   *width = window->properties.width;
   *height = window->properties.height;
+#endif
 }
 
-void *glps_get_proc_addr() { return egl_get_proc_addr(); }
+void *glps_get_proc_addr() {
+#ifdef GLPS_USE_WAYLAND
+  return egl_get_proc_addr();
+#endif
+
+  return NULL;
+}
 
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
                              int width, int height) {
-  ssize_t window_id = glps_wl_window_create(wm, title, width, height);
+
+  ssize_t window_id;
+#ifdef GLPS_USE_WAYLAND
+  window_id = glps_wl_window_create(wm, title, width, height);
+#endif
+
+#ifdef GLPS_USE_WIN32
+  window_id = glps_win32_window_create(wm, title, width, height);
+#endif
+
   if (window_id < 0) {
     LOG_ERROR("Window creation failed.");
   }
@@ -322,9 +355,16 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
     LOG_ERROR("Invalid window ID or window manager is NULL.");
     return;
   }
-
+#ifdef GLPS_USE_WAYLAND
   glps_wl_window_destroy(wm, window_id);
+#endif
+
+#ifdef GLPS_USE_WIN32
+
+#endif
 }
+
+#ifdef GLPS_USE_WAYLAND
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
 
   if (!wm->windows[window_id]->fps_is_init) {
@@ -347,13 +387,40 @@ double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
     return (double)1.0 / ((seconds + nanoseconds) / 1e9);
   }
 }
+#endif
 
 bool glps_wm_should_close(glps_WindowManager *wm) {
+#ifdef GLPS_USE_WAYLAND
   return glps_wl_should_close(wm);
+#endif
+#ifdef GLPS_USE_WIN32
+  MSG msg = {};
+  if (GetMessage(&msg, NULL, 0, 0)) {
+    TranslateMessage(&msg);
+    DispatchMessage(&msg);
+    return false;
+  }
+
+  return true;
+#endif
 }
 
-void glps_wm_destroy(glps_WindowManager *wm) { glps_wl_destroy(wm); }
+void glps_wm_destroy(glps_WindowManager *wm) {
+#ifdef GLPS_USE_WAYLAND
+
+  glps_wl_destroy(wm);
+
+#endif
+
+#ifdef GLPS_USE_WIN32
+    glps_win32_destroy(wm);
+#endif
+}
 
 void glps_window_update(glps_WindowManager *wm, size_t window_id) {
+
+#ifdef GLPS_USE_WAYLAND
   wl_update(wm, window_id);
+
+#endif
 }

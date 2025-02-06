@@ -122,9 +122,12 @@ BOOL SetPixelFormatForOpenGL(HDC hdc) {
   return TRUE;
 }
 
-void win32_window_create(glps_WindowManager *wm, HINSTANCE hInstance,
-                         const char *class_name, int nCmdShow,
+void win32_window_create(glps_WindowManager *wm,
+                         const char *class_name,
                          const char *title, int width, int height) {
+
+                             HINSTANCE hInstance = GetModuleHandle(NULL);
+
   HWND hwnd =
       CreateWindowEx(0, class_name, title, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
                      CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
@@ -177,7 +180,7 @@ void win32_window_create(glps_WindowManager *wm, HINSTANCE hInstance,
   wm->window_count++;
 
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)wm);
-  ShowWindow(hwnd, nCmdShow);
+  ShowWindow(hwnd, SW_SHOW);
   UpdateWindow(hwnd);
 }
 

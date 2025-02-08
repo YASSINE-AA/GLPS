@@ -83,9 +83,49 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     break;
 
-  case WM_MBUTTONDOWN:
-    
-  break;
+  case WM_MOUSEWHEEL:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+    double delta = (double)(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
+    DWORD extra_info = GetMessageExtraInfo();
+
+    // TODO: Improve this to have wider source support.
+    GLPS_SCROLL_SOURCE source =
+        extra_info == 0 ? GLPS_SCROLL_SOURCE_WHEEL : GLPS_SCROLL_SOURCE_FINGER;
+
+    if (wm->callbacks.mouse_scroll_callback) {
+      // TODO: impl discrete and is_stopped
+      wm->callbacks.mouse_scroll_callback(window_id, GLPS_SCROLL_V_AXIS, source,
+                                          delta, -1, false,
+                                          wm->callbacks.mouse_scroll_data);
+    }
+    break;
+
+    /* ======== Keyboard Input ========= */
+    case WM_SYSKEYDOWN:
+    LOG_INFO("WM_SYSKEYDOWN: 0x%x\n", wParam);
+    break;
+
+  case WM_SYSCHAR:
+    LOG_INFO("WM_SYSCHAR: %c\n", (wchar_t)wParam);
+    break;
+
+  case WM_SYSKEYUP:
+    LOG_INFO("WM_SYSKEYUP: 0x%x\n", wParam);
+    break;
+
+  case WM_KEYDOWN:
+    LOG_INFO("WM_KEYDOWN: 0x%x\n", wParam);
+    break;
+
+  case WM_KEYUP:
+    LOG_INFO("WM_KEYUP: 0x%x\n", wParam);
+    break;
+
+  case WM_CHAR:
+    LOG_INFO("WM_CHAR: %c\n", (wchar_t)wParam);
+    break;
 
   case WM_PAINT: {
     PAINTSTRUCT ps;

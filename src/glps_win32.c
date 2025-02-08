@@ -13,12 +13,98 @@ ssize_t __get_window_id_from_hwnd(glps_WindowManager *wm, HWND hwnd) {
   return -1;
 }
 
+void __get_special_key_name(UINT wParam, char *char_value, size_t size) {
+  switch (wParam) {
+  case VK_ESCAPE:
+    strncpy(char_value, "Escape", size);
+    break;
+  case VK_BACK:
+    strncpy(char_value, "Backspace", size);
+    break;
+  case VK_RETURN:
+    strncpy(char_value, "Enter", size);
+    break;
+  case VK_TAB:
+    strncpy(char_value, "Tab", size);
+    break;
+  case VK_DELETE:
+    strncpy(char_value, "Delete", size);
+    break;
+  case VK_INSERT:
+    strncpy(char_value, "Insert", size);
+    break;
+  case VK_HOME:
+    strncpy(char_value, "Home", size);
+    break;
+  case VK_END:
+    strncpy(char_value, "End", size);
+    break;
+  case VK_PRIOR:
+    strncpy(char_value, "PageUp", size);
+    break;
+  case VK_NEXT:
+    strncpy(char_value, "PageDown", size);
+    break;
+  case VK_LEFT:
+    strncpy(char_value, "ArrowLeft", size);
+    break;
+  case VK_RIGHT:
+    strncpy(char_value, "ArrowRight", size);
+    break;
+  case VK_UP:
+    strncpy(char_value, "ArrowUp", size);
+    break;
+  case VK_DOWN:
+    strncpy(char_value, "ArrowDown", size);
+    break;
+  case VK_F1:
+    strncpy(char_value, "F1", size);
+    break;
+  case VK_F2:
+    strncpy(char_value, "F2", size);
+    break;
+  case VK_F3:
+    strncpy(char_value, "F3", size);
+    break;
+  case VK_F4:
+    strncpy(char_value, "F4", size);
+    break;
+  case VK_F5:
+    strncpy(char_value, "F5", size);
+    break;
+  case VK_F6:
+    strncpy(char_value, "F6", size);
+    break;
+  case VK_F7:
+    strncpy(char_value, "F7", size);
+    break;
+  case VK_F8:
+    strncpy(char_value, "F8", size);
+    break;
+  case VK_F9:
+    strncpy(char_value, "F9", size);
+    break;
+  case VK_F10:
+    strncpy(char_value, "F10", size);
+    break;
+  case VK_F11:
+    strncpy(char_value, "F11", size);
+    break;
+  case VK_F12:
+    strncpy(char_value, "F12", size);
+    break;
+  default:
+    char_value[0] = '\0';
+  }
+}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {
   glps_WindowManager *wm =
       (glps_WindowManager *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
   ssize_t window_id = __get_window_id_from_hwnd(wm, hwnd);
-  POINT p;
+  POINT p = {.x = -1, .y = -1};
+  static bool key_states[256] = {false};
 
   switch (msg) {
   case WM_DESTROY:
@@ -42,20 +128,42 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
     }
     break;
 
-    /* =========== Mouse Input ============ */
+  /* =========== Mouse Input ============ */
   case WM_MOUSEMOVE:
-
     if (window_id < 0 || wm == NULL) {
       break;
     }
-
+    static bool is_mouse_in_window = false;
     GetCursorPos(&p);
+    ScreenToClient(hwnd, &p);
 
-    if (ScreenToClient(hwnd, &p)) {
-      if (wm->callbacks.mouse_move_callback) {
-        wm->callbacks.mouse_move_callback(window_id, p.x, p.y,
-                                          wm->callbacks.mouse_move_data);
+    if (!is_mouse_in_window) {
+      is_mouse_in_window = true;
+
+      if (wm->callbacks.mouse_enter_callback) {
+        wm->callbacks.mouse_enter_callback(window_id, (double)p.x, (double)p.y,
+                                           wm->callbacks.mouse_enter_data);
       }
+
+      TRACKMOUSEEVENT tme;
+      tme.cbSize = sizeof(TRACKMOUSEEVENT);
+      tme.dwFlags = TME_LEAVE;
+      tme.hwndTrack = hwnd;
+      TrackMouseEvent(&tme);
+    }
+
+    if (wm->callbacks.mouse_move_callback) {
+      wm->callbacks.mouse_move_callback(window_id, (double)p.x, (double)p.y,
+                                        wm->callbacks.mouse_move_data);
+    }
+    break;
+
+  case WM_MOUSELEAVE:
+    is_mouse_in_window = false;
+
+    if (wm && wm->callbacks.mouse_leave_callback) {
+      wm->callbacks.mouse_leave_callback(window_id,
+                                         wm->callbacks.mouse_leave_data);
     }
     break;
 
@@ -68,7 +176,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
       wm->callbacks.mouse_click_callback(window_id, true,
                                          wm->callbacks.mouse_click_data);
     }
-
     break;
 
   case WM_LBUTTONUP:
@@ -80,7 +187,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
       wm->callbacks.mouse_click_callback(window_id, false,
                                          wm->callbacks.mouse_click_data);
     }
-
     break;
 
   case WM_MOUSEWHEEL:
@@ -102,31 +208,111 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
     }
     break;
 
-    /* ======== Keyboard Input ========= */
-    case WM_SYSKEYDOWN:
-    LOG_INFO("WM_SYSKEYDOWN: 0x%x\n", wParam);
-    break;
-
-  case WM_SYSCHAR:
-    LOG_INFO("WM_SYSCHAR: %c\n", (wchar_t)wParam);
-    break;
-
-  case WM_SYSKEYUP:
-    LOG_INFO("WM_SYSKEYUP: 0x%x\n", wParam);
-    break;
-
+  /* ======== Keyboard Input ========= */
   case WM_KEYDOWN:
-    LOG_INFO("WM_KEYDOWN: 0x%x\n", wParam);
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (!(lParam & 0x40000000)) { // Prevent auto-repeat
+      if (wParam < 256 && !key_states[wParam]) {
+        key_states[wParam] = true;
+
+        if (wm->callbacks.keyboard_callback) {
+          char key_name[32] = {0};
+          GetKeyNameTextA(lParam, key_name, sizeof(key_name));
+
+          BYTE keyboardState[256];
+          GetKeyboardState(keyboardState);
+
+          WCHAR unicodeChar = 0;
+          char char_value[32] = {0};
+
+          if (ToUnicode(wParam, (lParam >> 16) & 0xFF, keyboardState,
+                        &unicodeChar, 1, 0) == 1) {
+            WideCharToMultiByte(CP_UTF8, 0, &unicodeChar, 1, char_value,
+                                sizeof(char_value), NULL, NULL);
+          }
+
+          if (char_value[0] == '\0') {
+            __get_special_key_name(wParam, char_value, sizeof(char_value));
+            if (char_value[0] == '\0')
+              strncpy(char_value, key_name, sizeof(char_value) - 1);
+          }
+
+          wm->callbacks.keyboard_callback(window_id, true, char_value,
+                                          wm->callbacks.keyboard_data);
+        }
+      }
+    }
     break;
 
   case WM_KEYUP:
-    LOG_INFO("WM_KEYUP: 0x%x\n", wParam);
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wParam < 256) {
+      key_states[wParam] = false;
+
+      if (wm->callbacks.keyboard_callback) {
+        char key_name[32] = {0};
+        GetKeyNameTextA(lParam, key_name, sizeof(key_name));
+
+        BYTE keyboardState[256];
+        GetKeyboardState(keyboardState);
+
+        WCHAR unicodeChar = 0;
+        char char_value[32] = {0};
+
+        if (ToUnicode(wParam, (lParam >> 16) & 0xFF, keyboardState,
+                      &unicodeChar, 1, 0) == 1) {
+          WideCharToMultiByte(CP_UTF8, 0, &unicodeChar, 1, char_value,
+                              sizeof(char_value), NULL, NULL);
+        }
+
+        if (char_value[0] == '\0') {
+          __get_special_key_name(wParam, char_value, sizeof(char_value));
+          if (char_value[0] == '\0')
+            strncpy(char_value, key_name, sizeof(char_value) - 1);
+        }
+
+        wm->callbacks.keyboard_callback(window_id, false, char_value,
+                                        wm->callbacks.keyboard_data);
+      }
+    }
     break;
 
-  case WM_CHAR:
-    LOG_INFO("WM_CHAR: %c\n", (wchar_t)wParam);
+    /* ======= Window focus ======= */
+  case WM_SETFOCUS:
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.keyboard_enter_callback) {
+      wm->callbacks.keyboard_enter_callback(window_id,
+                                            wm->callbacks.keyboard_enter_data);
+    }
+
     break;
 
+  case WM_KILLFOCUS:
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.keyboard_leave_callback) {
+      wm->callbacks.keyboard_leave_callback(window_id,
+                                            wm->callbacks.keyboard_leave_data);
+    }
+
+    break;
+
+    /* ======== Rendering ========= */
   case WM_PAINT: {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
@@ -150,7 +336,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
   }
   return 0;
 }
-
 static void __init_window_class(glps_WindowManager *wm,
                                 const char *class_name) {
   HINSTANCE hInstance = GetModuleHandle(NULL);

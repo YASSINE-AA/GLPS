@@ -1,7 +1,9 @@
 #include <glps_common.h>
 
 ssize_t __get_window_id_from_hwnd(glps_WindowManager *wm, HWND hwnd) {
-
+  if (wm == NULL) {
+    return -1;
+  }
   for (size_t i = 0; i < wm->window_count; ++i) {
     if (wm->windows[i]->hwnd == hwnd) {
       return i;
@@ -15,41 +17,83 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {
   glps_WindowManager *wm =
       (glps_WindowManager *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+  ssize_t window_id = __get_window_id_from_hwnd(wm, hwnd);
+  POINT p;
 
   switch (msg) {
   case WM_DESTROY:
-    if (wm) {
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
 
-      for (size_t i = 0; i < wm->window_count; i++) {
-        if (wm->windows[i]->hwnd == hwnd) {
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(wm->win32_ctx->hglrc);
+    ReleaseDC(wm->windows[window_id]->hwnd, wm->windows[window_id]->hdc);
 
-          wglMakeCurrent(NULL, NULL);
-          wglDeleteContext(wm->win32_ctx->hglrc);
-          ReleaseDC(wm->windows[i]->hwnd, wm->windows[i]->hdc);
+    free(wm->windows[window_id]);
 
-          free(wm->windows[i]);
+    for (size_t j = window_id; j < wm->window_count - 1; j++) {
+      wm->windows[j] = wm->windows[j + 1];
+    }
+    wm->window_count--;
 
-          for (size_t j = i; j < wm->window_count - 1; j++) {
-            wm->windows[j] = wm->windows[j + 1];
-          }
-          wm->window_count--;
-          break;
-        }
-      }
+    if (wm->window_count == 0) {
+      PostQuitMessage(0);
+    }
+    break;
 
-      if (wm->window_count == 0) {
-        PostQuitMessage(0);
+    /* =========== Mouse Input ============ */
+  case WM_MOUSEMOVE:
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    GetCursorPos(&p);
+
+    if (ScreenToClient(hwnd, &p)) {
+      if (wm->callbacks.mouse_move_callback) {
+        wm->callbacks.mouse_move_callback(window_id, p.x, p.y,
+                                          wm->callbacks.mouse_move_data);
       }
     }
     break;
 
+  case WM_LBUTTONDOWN:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.mouse_click_callback) {
+      wm->callbacks.mouse_click_callback(window_id, true,
+                                         wm->callbacks.mouse_click_data);
+    }
+
+    break;
+
+  case WM_LBUTTONUP:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.mouse_click_callback) {
+      wm->callbacks.mouse_click_callback(window_id, false,
+                                         wm->callbacks.mouse_click_data);
+    }
+
+    break;
+
+  case WM_MBUTTONDOWN:
+    
+  break;
+
   case WM_PAINT: {
     PAINTSTRUCT ps;
     HDC hdc = BeginPaint(hwnd, &ps);
-    ssize_t window_id = __get_window_id_from_hwnd(wm, hwnd);
 
-    if (window_id < 0) {
+    if (window_id < 0 || wm == NULL) {
       EndPaint(hwnd, &ps);
+      break;
     }
 
     if (wm->callbacks.window_frame_update_callback) {
@@ -189,18 +233,16 @@ ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title,
     DestroyWindow(win32_window->hwnd);
     return -1;
   }
-  if(wm->window_count == 0)
-      {
-          wm->win32_ctx->hglrc = wglCreateContext(win32_window->hdc);
-          if (!wm->win32_ctx->hglrc) {
-            MessageBox(NULL, "wglCreateContext failed!", "Error!",
-                       MB_ICONEXCLAMATION | MB_OK);
-            ReleaseDC(win32_window->hwnd, win32_window->hdc);
-            DestroyWindow(win32_window->hwnd);
-            return -1;
-          }
-      }
-
+  if (wm->window_count == 0) {
+    wm->win32_ctx->hglrc = wglCreateContext(win32_window->hdc);
+    if (!wm->win32_ctx->hglrc) {
+      MessageBox(NULL, "wglCreateContext failed!", "Error!",
+                 MB_ICONEXCLAMATION | MB_OK);
+      ReleaseDC(win32_window->hwnd, win32_window->hdc);
+      DestroyWindow(win32_window->hwnd);
+      return -1;
+    }
+  }
 
   wglMakeCurrent(win32_window->hdc, wm->win32_ctx->hglrc);
 
@@ -236,7 +278,6 @@ void glps_win32_destroy(glps_WindowManager *wm) {
   }
 }
 
-HDC glps_win32_get_window_hdc(glps_WindowManager* wm, size_t window_id)
-{
-    return wm->windows[window_id]->hdc;
+HDC glps_win32_get_window_hdc(glps_WindowManager *wm, size_t window_id) {
+  return wm->windows[window_id]->hdc;
 }

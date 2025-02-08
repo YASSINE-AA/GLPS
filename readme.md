@@ -31,8 +31,8 @@ GLPS is actively evolving! Here’s a snapshot of what’s already implemented a
 |                        | WGL Support              | N/A                | ✅ Implemented   | Display, context, and surface management (Win32 only)                       |
 |                        | OpenGL Contexts          | ✅ Implemented     | ✅ Implemented   | GLPS handles context creation; you handle the rendering                     |
 |                        | Vulkan Support           | ⬜ Planned         | ⬜ Planned       | Additional backend support                                                  |
-| **Input Handling**     | Keyboard Input           | ✅ Implemented     | ⬜ Planned       | keyboard events                                                     |
-|                        | Mouse Input              | ✅ Implemented     | ⬜ Planned       | Pointer event management                                                    |
+| **Input Handling**     | Keyboard Input           | ✅ Implemented     | ✅ Implemented      | keyboard events                                                     |
+|                        | Mouse Input              | ✅ Implemented     | ✅ Implemented       | Pointer event management                                                    |
 |                        | Touchscreen Support      | ✅ Implemented     | ⬜ Planned       | Touch input events                                                          |
 | **Advanced Features**  | Wayland Compositor       | ✅ Implemented     | N/A              | Registry interactions (Wayland only)                                        |
 |                        | XDG-Shell Support        | ✅ Implemented     | N/A              | Surface and toplevel management (Wayland only)                              |

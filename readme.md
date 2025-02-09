@@ -23,22 +23,22 @@ GLPS is actively evolving! Here’s a snapshot of what’s already implemented a
 
 ### ✅ **Feature Matrix (Wayland & Win32)**
 
-| **Category**           | **Feature**               | **Wayland Status** | **Win32 Status** | **Details**                                                                 |
-|------------------------|---------------------------|--------------------|------------------|-----------------------------------------------------------------------------|
-| **Window Management**  | Multi-Window Support      | ✅ Implemented     | ✅ Implemented   | Unique contexts per window                                                  |
-|                        | High DPI Scaling          | ⬜ Planned         | ⬜ Planned       | Resolution adaptive interfaces                                              |
-| **Graphics Integration** | EGL Support             | ✅ Implemented     | N/A              | Display, context, and surface management (Wayland only)                     |
-|                        | WGL Support              | N/A                | ✅ Implemented   | Display, context, and surface management (Win32 only)                       |
-|                        | OpenGL Contexts          | ✅ Implemented     | ✅ Implemented   | GLPS handles context creation; you handle the rendering                     |
-|                        | Vulkan Support           | ⬜ Planned         | ⬜ Planned       | Additional backend support                                                  |
-| **Input Handling**     | Keyboard Input           | ✅ Implemented     | ✅ Implemented      | keyboard events                                                     |
-|                        | Mouse Input              | ✅ Implemented     | ✅ Implemented       | Pointer event management                                                    |
-|                        | Touchscreen Support      | ✅ Implemented     | ⬜ Planned       | Touch input events                                                          |
-| **Advanced Features**  | Wayland Compositor       | ✅ Implemented     | N/A              | Registry interactions (Wayland only)                                        |
-|                        | XDG-Shell Support        | ✅ Implemented     | N/A              | Surface and toplevel management (Wayland only)                              |
-|                        | Clipboard Integration    | ✅ Implemented     | ⬜ Planned       | Cross-application data transfer                                             |
-|                        | Drag-and-Drop            | ✅ Implemented     |   ✅ Implemented | Enhanced user interaction                                                   |
-| **Development Tools**  | Logging                  | ✅ Implemented     | ✅ Implemented   | Integrated with [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger)    |
+| **Category**             | **Feature**           | **Wayland Status** | **Win32 Status** | **Details**                                                              |
+| ------------------------ | --------------------- | ------------------ | ---------------- | ------------------------------------------------------------------------ |
+| **Window Management**    | Multi-Window Support  | ✅ Implemented     | ✅ Implemented   | Unique contexts per window                                               |
+|                          | High DPI Scaling      | ⬜ Planned         | ⬜ Planned       | Resolution adaptive interfaces                                           |
+| **Graphics Integration** | EGL Support           | ✅ Implemented     | N/A              | Display, context, and surface management (Wayland only)                  |
+|                          | WGL Support           | N/A                | ✅ Implemented   | Display, context, and surface management (Win32 only)                    |
+|                          | OpenGL Contexts       | ✅ Implemented     | ✅ Implemented   | GLPS handles context creation; you handle the rendering                  |
+|                          | Vulkan Support        | ⬜ Planned         | ⬜ Planned       | Additional backend support                                               |
+| **Input Handling**       | Keyboard Input        | ✅ Implemented     | ✅ Implemented   | keyboard events                                                          |
+|                          | Mouse Input           | ✅ Implemented     | ✅ Implemented   | Pointer event management                                                 |
+|                          | Touchscreen Support   | ✅ Implemented     | ⬜ Planned       | Touch input events                                                       |
+| **Advanced Features**    | Wayland Compositor    | ✅ Implemented     | N/A              | Registry interactions (Wayland only)                                     |
+|                          | XDG-Shell Support     | ✅ Implemented     | N/A              | Surface and toplevel management (Wayland only)                           |
+|                          | Clipboard Integration | ✅ Implemented     | ⬜ Planned       | Cross-application data transfer                                          |
+|                          | Drag-and-Drop         | ✅ Implemented     | ✅ Implemented   | Enhanced user interaction                                                |
+| **Development Tools**    | Logging               | ✅ Implemented     | ✅ Implemented   | Integrated with [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger) |
 
 ---
 

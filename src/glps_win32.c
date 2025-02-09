@@ -1,10 +1,15 @@
 #include <glps_common.h>
+#define MAX_KEY_LENGTH 255
+#define MAX_VALUE_NAME 16383
+#define MAX_FILES 128
+#define MAX_PATH_LENGTH MAX_PATH
+#define MAX_MIME_LENGTH 64
 
 ssize_t __get_window_id_from_hwnd(glps_WindowManager *wm, HWND hwnd) {
   if (wm == NULL) {
     return -1;
   }
-  for (size_t i = 0; i < wm->window_count; ++i) {
+  for (SIZE_T i = 0; i < wm->window_count; ++i) {
     if (wm->windows[i]->hwnd == hwnd) {
       return i;
     }
@@ -118,7 +123,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     free(wm->windows[window_id]);
 
-    for (size_t j = window_id; j < wm->window_count - 1; j++) {
+    for (SIZE_T j = window_id; j < wm->window_count - 1; j++) {
       wm->windows[j] = wm->windows[j + 1];
     }
     wm->window_count--;
@@ -193,7 +198,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
     if (window_id < 0 || wm == NULL) {
       break;
     }
-    double delta = (double)(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
+    DOUBLE delta = (DOUBLE)(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
     DWORD extra_info = GetMessageExtraInfo();
 
     // TODO: Improve this to have wider source support.
@@ -324,12 +329,73 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     if (wm->callbacks.window_frame_update_callback) {
       wm->callbacks.window_frame_update_callback(
-          (size_t)window_id, wm->callbacks.window_frame_update_data);
+          (SIZE_T)window_id, wm->callbacks.window_frame_update_data);
     }
 
     EndPaint(hwnd, &ps);
     break;
   }
+
+    /* ========= Touch ========== */
+  case WM_TOUCH:
+
+    break;
+
+  case WM_DROPFILES:
+
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+    HDROP hDropInfo = (HDROP)wParam;
+    CHAR files[MAX_PATH_LENGTH * MAX_FILES] = {0};
+    CHAR filename[MAX_PATH_LENGTH] = {0};
+    CHAR mime_types[MAX_MIME_LENGTH * MAX_FILES] = {0};
+
+    UINT count = DragQueryFileA(hDropInfo, 0xFFFFFFFF, NULL, 0);
+    if (count == 0) {
+      LOG_ERROR("No files dropped.\n");
+      return -1;
+    }
+
+    for (UINT i = 0; i < count; ++i) {
+      if (DragQueryFileA(hDropInfo, i, filename, MAX_PATH_LENGTH) == 0) {
+        LOG_ERROR("Failed to get filename for file %u.\n", i);
+        continue;
+      }
+
+      strncat(files, filename, sizeof(files) - strlen(files) - 1);
+
+      const CHAR *extension = strrchr(filename, '.');
+      if (extension == NULL) {
+        LOG_ERROR("File %s has no extension.\n", filename);
+        continue;
+      }
+
+      CHAR mime[MAX_MIME_LENGTH] = {0};
+      DWORD data_size = sizeof(mime);
+      LOG_INFO("%s", extension);
+
+      LONG result = RegGetValueA(HKEY_CLASSES_ROOT, extension, "Content Type",
+                                 RRF_RT_REG_SZ, NULL, mime, &data_size);
+      if (result == ERROR_SUCCESS) {
+        strncat(mime_types, mime, sizeof(mime_types) - strlen(mime_types) - 1);
+
+      } else {
+        // TODO: find a way to give alternate type other than unknown.
+        strncat(mime_types, "unknown",
+                sizeof(mime_types) - strlen(mime_types) - 1);
+      }
+
+      if (i != count - 1) {
+        strncat(mime_types, ",", sizeof(mime_types) - strlen(mime_types) - 1);
+        strncat(files, ",", sizeof(files) - strlen(files) - 1);
+      }
+    }
+
+    if (wm->callbacks.drag_n_drop_callback) {
+      wm->callbacks.drag_n_drop_callback(window_id, mime_types, files,
+                                         wm->callbacks.drag_n_drop_data);
+    }
 
   default:
     return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -412,7 +478,7 @@ static BOOL SetPixelFormatForOpenGL(HDC hdc) {
                                0,
                                0};
 
-  int pixelFormat = ChoosePixelFormat(hdc, &pfd);
+  INT pixelFormat = ChoosePixelFormat(hdc, &pfd);
   if (pixelFormat == 0) {
     MessageBox(NULL, "ChoosePixelFormat failed!", "Error!",
                MB_ICONEXCLAMATION | MB_OK);
@@ -481,12 +547,15 @@ ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title,
   SetWindowLongPtr(win32_window->hwnd, GWLP_USERDATA, (LONG_PTR)wm);
   ShowWindow(win32_window->hwnd, SW_SHOW);
   UpdateWindow(win32_window->hwnd);
+  DragAcceptFiles(win32_window->hwnd, TRUE);
+
   return wm->window_count++;
 }
 
 void glps_win32_destroy(glps_WindowManager *wm) {
   for (size_t i = 0; i < wm->window_count; ++i) {
     if (wm->windows[i] != NULL) {
+      DragAcceptFiles(wm->windows[i]->hwnd, FALSE);
       free(wm->windows[i]);
       wm->windows[i] = NULL;
     }

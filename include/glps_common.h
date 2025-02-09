@@ -24,6 +24,7 @@
 #ifdef GLPS_USE_WIN32
 #include <GL/gl.h>
 #include <windows.h>
+#include <tchar.h>
 #endif
 
 // Wayland

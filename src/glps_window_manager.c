@@ -5,8 +5,8 @@
 
 // *=========== WIN32 ===========* //
 #ifdef GLPS_USE_WIN32
-#include <glps_win32.h>
 #include <glps_wgl_context.h>
+#include <glps_win32.h>
 #include <windows.h>
 #endif
 
@@ -200,6 +200,20 @@ void glps_wm_start_drag_n_drop(
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
+
+#ifdef GLPS_USE_WIN32
+  glps_Win32Context *ctx = (glps_Win32Context *)wm->win32_ctx;
+  if (ctx == NULL) {
+    LOG_ERROR("Win32 context is NULL.");
+    return;
+  }
+
+  wm->callbacks.drag_n_drop_callback = drag_n_drop_callback;
+  wm->callbacks.drag_n_drop_data = data;
+ // ctx->current_drag_n_drop_window = origin_window_id;
+
+#endif
+
 #ifdef GLPS_USE_WAYLAND
 
   glps_WaylandContext *ctx = (glps_WaylandContext *)__get_wl_context(wm);
@@ -333,12 +347,12 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
 #endif
 }
 
-void *glps_get_proc_addr(const char* name) {
+void *glps_get_proc_addr(const char *name) {
 #ifdef GLPS_USE_WAYLAND
   return glps_egl_get_proc_addr(name);
 #endif
 #ifdef GLPS_USE_WIN32
-    return glps_wgl_get_proc_addr(name);
+  return glps_wgl_get_proc_addr(name);
 #endif
 }
 

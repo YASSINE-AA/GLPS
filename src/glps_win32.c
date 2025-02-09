@@ -320,8 +320,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
     /* ======== Rendering ========= */
   case WM_PAINT: {
     PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwnd, &ps);
 
+    HDC hdc = BeginPaint(hwnd, &ps);
+    LOG_CRITICAL("=================PAINT EVENT===================");
     if (window_id < 0 || wm == NULL) {
       EndPaint(hwnd, &ps);
       break;
@@ -341,54 +342,59 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     break;
 
-  case WM_DROPFILES:
-
+  case WM_DROPFILES: {
     if (window_id < 0 || wm == NULL) {
-      break;
+      return -1;
     }
+
     HDROP hDropInfo = (HDROP)wParam;
+    WCHAR filename[MAX_PATH_LENGTH] = {0};
+    WCHAR mime[MAX_MIME_LENGTH] = {0};
     CHAR files[MAX_PATH_LENGTH * MAX_FILES] = {0};
-    CHAR filename[MAX_PATH_LENGTH] = {0};
     CHAR mime_types[MAX_MIME_LENGTH * MAX_FILES] = {0};
 
-    UINT count = DragQueryFileA(hDropInfo, 0xFFFFFFFF, NULL, 0);
+    UINT count = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
     if (count == 0) {
       LOG_ERROR("No files dropped.\n");
+      DragFinish(hDropInfo);
       return -1;
     }
 
     for (UINT i = 0; i < count; ++i) {
-      if (DragQueryFileA(hDropInfo, i, filename, MAX_PATH_LENGTH) == 0) {
+      if (DragQueryFileW(hDropInfo, i, filename, MAX_PATH_LENGTH) == 0) {
         LOG_ERROR("Failed to get filename for file %u.\n", i);
         continue;
       }
 
-      strncat(files, filename, sizeof(files) - strlen(files) - 1);
+      CHAR utf8_filename[MAX_PATH_LENGTH] = {0};
+      WideCharToMultiByte(CP_UTF8, 0, filename, -1, utf8_filename,
+                          MAX_PATH_LENGTH, NULL, NULL);
 
-      const CHAR *extension = strrchr(filename, '.');
+      strcat(files, utf8_filename);
+
+      WCHAR *extension = wcsrchr(filename, L'.');
       if (extension == NULL) {
-        LOG_ERROR("File %s has no extension.\n", filename);
+        LOG_ERROR("File %s has no extension.\n", utf8_filename);
         continue;
       }
 
-      CHAR mime[MAX_MIME_LENGTH] = {0};
       DWORD data_size = sizeof(mime);
-      LOG_INFO("%s", extension);
-
-      LONG result = RegGetValueA(HKEY_CLASSES_ROOT, extension, "Content Type",
+      LONG result = RegGetValueW(HKEY_CLASSES_ROOT, extension, L"Content Type",
                                  RRF_RT_REG_SZ, NULL, mime, &data_size);
-      if (result == ERROR_SUCCESS) {
-        strncat(mime_types, mime, sizeof(mime_types) - strlen(mime_types) - 1);
 
+      CHAR utf8_mime[MAX_MIME_LENGTH] = {0};
+      if (result == ERROR_SUCCESS) {
+        WideCharToMultiByte(CP_UTF8, 0, mime, -1, utf8_mime, MAX_MIME_LENGTH,
+                            NULL, NULL);
       } else {
-        // TODO: find a way to give alternate type other than unknown.
-        strncat(mime_types, "unknown",
-                sizeof(mime_types) - strlen(mime_types) - 1);
+        strcpy(utf8_mime, "unknown");
       }
 
+      strcat(mime_types, utf8_mime);
+
       if (i != count - 1) {
-        strncat(mime_types, ",", sizeof(mime_types) - strlen(mime_types) - 1);
-        strncat(files, ",", sizeof(files) - strlen(files) - 1);
+        strcat(mime_types, ",");
+        strcat(files, ",");
       }
     }
 
@@ -396,6 +402,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
       wm->callbacks.drag_n_drop_callback(window_id, mime_types, files,
                                          wm->callbacks.drag_n_drop_data);
     }
+
+    DragFinish(hDropInfo);
+    break;
+  }
 
   default:
     return DefWindowProc(hwnd, msg, wParam, lParam);

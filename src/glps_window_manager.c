@@ -210,7 +210,7 @@ void glps_wm_start_drag_n_drop(
 
   wm->callbacks.drag_n_drop_callback = drag_n_drop_callback;
   wm->callbacks.drag_n_drop_data = data;
- // ctx->current_drag_n_drop_window = origin_window_id;
+  // ctx->current_drag_n_drop_window = origin_window_id;
 
 #endif
 
@@ -389,9 +389,8 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
 #endif
 }
 
-#ifdef GLPS_USE_WAYLAND
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
-
+#ifdef GLPS_USE_WAYLAND
   if (!wm->windows[window_id]->fps_is_init) {
     clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
     wm->windows[window_id]->fps_is_init = true;
@@ -411,8 +410,13 @@ double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
     wm->windows[window_id]->fps_start_time = end_time;
     return (double)1.0 / ((seconds + nanoseconds) / 1e9);
   }
-}
 #endif
+
+#ifdef GLPS_USE_WIN32
+  return 1.0f;
+
+#endif
+}
 
 bool glps_wm_should_close(glps_WindowManager *wm) {
 #ifdef GLPS_USE_WAYLAND
@@ -450,6 +454,6 @@ void glps_window_update(glps_WindowManager *wm, size_t window_id) {
 #endif
 
 #ifdef GLPS_USE_WIN32
-  UpdateWindow(wm->windows[window_id]->hwnd);
+   InvalidateRect (wm->windows[window_id]->hwnd, NULL, TRUE) ;
 #endif
 }

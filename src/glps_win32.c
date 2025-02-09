@@ -103,6 +103,41 @@ void __get_special_key_name(UINT wParam, char *char_value, size_t size) {
   }
 }
 
+void glps_win32_attach_to_clipboard(glps_WindowManager *wm, char *mime,
+                                    char *data) {
+
+  if (!OpenClipboard(NULL)) {
+    LOG_ERROR("Couldn't access Clipboard.");
+    return;
+  }
+
+  if (!EmptyClipboard()) {
+    CloseClipboard();
+    return;
+  }
+
+  HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, strlen(data) + 1);
+  if (!hGlobal) {
+    CloseClipboard();
+    return;
+  }
+
+  char *pGlobal = (char *)GlobalLock(hGlobal);
+  if (pGlobal) {
+    strcpy(pGlobal, data);
+    GlobalUnlock(hGlobal);
+  }
+
+  if (!SetClipboardData(CF_TEXT, hGlobal)) {
+    GlobalFree(hGlobal);
+  }
+
+  CloseClipboard();
+}
+
+void glps_win32_get_from_clipboard(glps_WindowManager *wm, char *data,
+                                   size_t data_size) {}
+
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {
   glps_WindowManager *wm =
@@ -130,86 +165,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     if (wm->window_count == 0) {
       PostQuitMessage(0);
-    }
-    break;
-
-  /* =========== Mouse Input ============ */
-  case WM_MOUSEMOVE:
-    if (window_id < 0 || wm == NULL) {
-      break;
-    }
-    static bool is_mouse_in_window = false;
-    GetCursorPos(&p);
-    ScreenToClient(hwnd, &p);
-
-    if (!is_mouse_in_window) {
-      is_mouse_in_window = true;
-
-      if (wm->callbacks.mouse_enter_callback) {
-        wm->callbacks.mouse_enter_callback(window_id, (double)p.x, (double)p.y,
-                                           wm->callbacks.mouse_enter_data);
-      }
-
-      TRACKMOUSEEVENT tme;
-      tme.cbSize = sizeof(TRACKMOUSEEVENT);
-      tme.dwFlags = TME_LEAVE;
-      tme.hwndTrack = hwnd;
-      TrackMouseEvent(&tme);
-    }
-
-    if (wm->callbacks.mouse_move_callback) {
-      wm->callbacks.mouse_move_callback(window_id, (double)p.x, (double)p.y,
-                                        wm->callbacks.mouse_move_data);
-    }
-    break;
-
-  case WM_MOUSELEAVE:
-    is_mouse_in_window = false;
-
-    if (wm && wm->callbacks.mouse_leave_callback) {
-      wm->callbacks.mouse_leave_callback(window_id,
-                                         wm->callbacks.mouse_leave_data);
-    }
-    break;
-
-  case WM_LBUTTONDOWN:
-    if (window_id < 0 || wm == NULL) {
-      break;
-    }
-
-    if (wm->callbacks.mouse_click_callback) {
-      wm->callbacks.mouse_click_callback(window_id, true,
-                                         wm->callbacks.mouse_click_data);
-    }
-    break;
-
-  case WM_LBUTTONUP:
-    if (window_id < 0 || wm == NULL) {
-      break;
-    }
-
-    if (wm->callbacks.mouse_click_callback) {
-      wm->callbacks.mouse_click_callback(window_id, false,
-                                         wm->callbacks.mouse_click_data);
-    }
-    break;
-
-  case WM_MOUSEWHEEL:
-    if (window_id < 0 || wm == NULL) {
-      break;
-    }
-    DOUBLE delta = (DOUBLE)(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
-    DWORD extra_info = GetMessageExtraInfo();
-
-    // TODO: Improve this to have wider source support.
-    GLPS_SCROLL_SOURCE source =
-        extra_info == 0 ? GLPS_SCROLL_SOURCE_WHEEL : GLPS_SCROLL_SOURCE_FINGER;
-
-    if (wm->callbacks.mouse_scroll_callback) {
-      // TODO: impl discrete and is_stopped
-      wm->callbacks.mouse_scroll_callback(window_id, GLPS_SCROLL_V_AXIS, source,
-                                          delta, -1, false,
-                                          wm->callbacks.mouse_scroll_data);
     }
     break;
 
@@ -355,6 +310,85 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
       }
     }
 
+    break;
+  /* =========== Mouse Input ============ */
+  case WM_MOUSEMOVE:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+    static bool is_mouse_in_window = false;
+    GetCursorPos(&p);
+    ScreenToClient(hwnd, &p);
+
+    if (!is_mouse_in_window) {
+      is_mouse_in_window = true;
+
+      if (wm->callbacks.mouse_enter_callback) {
+        wm->callbacks.mouse_enter_callback(window_id, (double)p.x, (double)p.y,
+                                           wm->callbacks.mouse_enter_data);
+      }
+
+      TRACKMOUSEEVENT tme;
+      tme.cbSize = sizeof(TRACKMOUSEEVENT);
+      tme.dwFlags = TME_LEAVE;
+      tme.hwndTrack = hwnd;
+      TrackMouseEvent(&tme);
+    }
+
+    if (wm->callbacks.mouse_move_callback) {
+      wm->callbacks.mouse_move_callback(window_id, (double)p.x, (double)p.y,
+                                        wm->callbacks.mouse_move_data);
+    }
+    break;
+
+  case WM_MOUSELEAVE:
+    is_mouse_in_window = false;
+
+    if (wm && wm->callbacks.mouse_leave_callback) {
+      wm->callbacks.mouse_leave_callback(window_id,
+                                         wm->callbacks.mouse_leave_data);
+    }
+    break;
+
+  case WM_LBUTTONDOWN:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.mouse_click_callback) {
+      wm->callbacks.mouse_click_callback(window_id, true,
+                                         wm->callbacks.mouse_click_data);
+    }
+    break;
+
+  case WM_LBUTTONUP:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+
+    if (wm->callbacks.mouse_click_callback) {
+      wm->callbacks.mouse_click_callback(window_id, false,
+                                         wm->callbacks.mouse_click_data);
+    }
+    break;
+
+  case WM_MOUSEWHEEL:
+    if (window_id < 0 || wm == NULL) {
+      break;
+    }
+    DOUBLE delta = (DOUBLE)(GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA);
+    DWORD extra_info = GetMessageExtraInfo();
+
+    // TODO: Improve this to have wider source support.
+    GLPS_SCROLL_SOURCE source =
+        extra_info == 0 ? GLPS_SCROLL_SOURCE_WHEEL : GLPS_SCROLL_SOURCE_FINGER;
+
+    if (wm->callbacks.mouse_scroll_callback) {
+      // TODO: impl discrete and is_stopped
+      wm->callbacks.mouse_scroll_callback(window_id, GLPS_SCROLL_V_AXIS, source,
+                                          delta, -1, false,
+                                          wm->callbacks.mouse_scroll_data);
+    }
     break;
 
   case WM_DROPFILES: {
@@ -598,6 +632,11 @@ void glps_win32_destroy(glps_WindowManager *wm) {
   if (wm->windows != NULL) {
     free(wm->windows);
     wm->windows = NULL;
+  }
+
+  if (wm->win32_ctx != NULL) {
+    free(wm->win32_ctx);
+    wm->win32_ctx = NULL;
   }
 
   if (wm != NULL) {

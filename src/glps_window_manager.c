@@ -189,6 +189,11 @@ void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
   strncpy(data, wm->clipboard.buff, data_size - 1);
   data[data_size - 1] = '\0';
 #endif
+#ifdef GLPS_USE_WIN32
+
+  glps_win32_attach_to_clipboard(wm, "unknown", data);
+
+#endif
 }
 
 void glps_wm_start_drag_n_drop(

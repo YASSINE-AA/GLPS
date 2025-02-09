@@ -14,4 +14,10 @@ void glps_win32_get_window_dimensions(glps_WindowManager *wm, size_t window_id,
 
 HDC glps_win32_get_window_hdc(glps_WindowManager *wm, size_t window_id);
 
+void glps_win32_attach_to_clipboard(glps_WindowManager *wm, char *mime,
+                                 char *data);
+
+void glps_win32_get_from_clipboard(glps_WindowManager *wm, char *data,
+                                size_t data_size);
+
 #endif

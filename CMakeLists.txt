@@ -30,10 +30,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     )
 
     set(HEADERS
-        include/glps_wgl_context.h
+        internal/glps_wgl_context.h
         include/glps_window_manager.h
-        include/glps_win32.h
-        include/glps_common.h
+        internal/glps_win32.h
+        internal/glps_common.h
         internal/utils/logger/pico_logger.h
     )
 
@@ -77,10 +77,10 @@ elseif(UNIX AND NOT APPLE)
         )
 
         set(HEADERS
-            include/glps_wayland.h
+            internal/glps_wayland.h
             include/glps_window_manager.h
-            include/glps_egl_context.h
-            include/glps_common.h
+            internal/glps_egl_context.h
+            internal/glps_common.h
             internal/utils/logger/pico_logger.h
             internal/xdg/wlr-data-control-unstable-v1.h
             internal/xdg/xdg-decorations.h

@@ -322,7 +322,6 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
     PAINTSTRUCT ps;
 
     HDC hdc = BeginPaint(hwnd, &ps);
-    LOG_CRITICAL("=================PAINT EVENT===================");
     if (window_id < 0 || wm == NULL) {
       EndPaint(hwnd, &ps);
       break;
@@ -330,7 +329,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     if (wm->callbacks.window_frame_update_callback) {
       wm->callbacks.window_frame_update_callback(
-          (SIZE_T)window_id, wm->callbacks.window_frame_update_data);
+          window_id, wm->callbacks.window_frame_update_data);
     }
 
     EndPaint(hwnd, &ps);
@@ -339,6 +338,22 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
 
     /* ========= Touch ========== */
   case WM_TOUCH:
+
+    break;
+
+  case WM_SIZE:
+    if (window_id < 0 || wm == NULL) {
+      return -1;
+    }
+    RECT rect;
+    if (GetWindowRect(hwnd, &rect)) {
+      int width = rect.right - rect.left;
+      int height = rect.bottom - rect.top;
+      if (wm->callbacks.window_resize_callback) {
+        wm->callbacks.window_resize_callback(window_id, width, height,
+                                             wm->callbacks.window_resize_data);
+      }
+    }
 
     break;
 
@@ -502,6 +517,15 @@ static BOOL SetPixelFormatForOpenGL(HDC hdc) {
   }
 
   return TRUE;
+}
+
+void glps_win32_get_window_dimensions(glps_WindowManager *wm, size_t window_id,
+                                      int *width, int *height) {
+  RECT rect;
+  if (GetWindowRect(wm->windows[window_id]->hwnd, &rect)) {
+    *width = rect.right - rect.left;
+    *height = rect.bottom - rect.top;
+  }
 }
 
 ssize_t glps_win32_window_create(glps_WindowManager *wm, const char *title,

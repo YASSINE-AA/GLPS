@@ -2,7 +2,7 @@
 
 
 void glps_wgl_make_ctx_current(glps_WindowManager *wm, size_t window_id) {
-  wglMakeCurrent(wm->windows[window_id]->hdc, wm->win32_ctx->hglrc);
+  wglMakeCurrent(wm->windows[window_id]->hwnd, wm->win32_ctx->hglrc);
 }
 void *glps_wgl_get_proc_addr(const char *name) {
     return (void *)wglGetProcAddress(name);

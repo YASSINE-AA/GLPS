@@ -345,6 +345,12 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
   *width = window->properties.width;
   *height = window->properties.height;
 #endif
+
+#ifdef GLPS_USE_WIN32
+
+  glps_win32_get_window_dimensions(wm, window_id, width, height);
+
+#endif
 }
 
 void *glps_get_proc_addr(const char *name) {
@@ -454,6 +460,6 @@ void glps_window_update(glps_WindowManager *wm, size_t window_id) {
 #endif
 
 #ifdef GLPS_USE_WIN32
-   InvalidateRect (wm->windows[window_id]->hwnd, NULL, TRUE) ;
+  InvalidateRect(wm->windows[window_id]->hwnd, NULL, TRUE);
 #endif
 }

@@ -90,7 +90,7 @@ void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id);
  */
 void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval);
 
-void glps_window_update(glps_WindowManager *wm, size_t window_id);
+void glps_wm_window_update(glps_WindowManager *wm, size_t window_id);
 
 /**
  * @brief Destroys the specified window.

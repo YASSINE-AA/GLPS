@@ -175,6 +175,12 @@ void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
                                context->keyboard_serial);
 
 #endif
+
+#ifdef GLPS_USE_WIN32
+
+  glps_win32_attach_to_clipboard(wm, "unknown", data);
+
+#endif
 }
 
 void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
@@ -190,9 +196,7 @@ void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
   data[data_size - 1] = '\0';
 #endif
 #ifdef GLPS_USE_WIN32
-
-  glps_win32_attach_to_clipboard(wm, "unknown", data);
-
+  glps_win32_get_from_clipboard(wm, data, data_size);
 #endif
 }
 
@@ -457,7 +461,7 @@ void glps_wm_destroy(glps_WindowManager *wm) {
 #endif
 }
 
-void glps_window_update(glps_WindowManager *wm, size_t window_id) {
+void glps_wm_window_update(glps_WindowManager *wm, size_t window_id) {
 
 #ifdef GLPS_USE_WAYLAND
   wl_update(wm, window_id);

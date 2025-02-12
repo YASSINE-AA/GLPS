@@ -107,17 +107,19 @@ void glps_win32_attach_to_clipboard(glps_WindowManager *wm, char *mime,
                                     char *data) {
 
   if (!OpenClipboard(NULL)) {
-    LOG_ERROR("Couldn't access Clipboard.");
+    LOG_ERROR("Failed to open clipboard.");
     return;
   }
 
   if (!EmptyClipboard()) {
+    LOG_ERROR("Failed to empty clipboard.");
     CloseClipboard();
     return;
   }
 
   HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, strlen(data) + 1);
   if (!hGlobal) {
+    LOG_ERROR("Failed to allocate global memory.");
     CloseClipboard();
     return;
   }
@@ -126,17 +128,48 @@ void glps_win32_attach_to_clipboard(glps_WindowManager *wm, char *mime,
   if (pGlobal) {
     strcpy(pGlobal, data);
     GlobalUnlock(hGlobal);
+  } else {
+    LOG_ERROR("Failed to lock global memory.\n");
+    GlobalFree(hGlobal);
+    CloseClipboard();
+    return;
   }
 
   if (!SetClipboardData(CF_TEXT, hGlobal)) {
+    LOG_ERROR("Failed to set clipboard data.");
     GlobalFree(hGlobal);
   }
-
   CloseClipboard();
 }
 
 void glps_win32_get_from_clipboard(glps_WindowManager *wm, char *data,
-                                   size_t data_size) {}
+                                   size_t data_size) {
+  if (!OpenClipboard(NULL)) {
+    LOG_ERROR("Failed to open clipboard.");
+    return;
+  }
+
+  HANDLE hData = GetClipboardData(CF_TEXT);
+  if (!hData) {
+    LOG_ERROR("Failed to get clipboard data.");
+    CloseClipboard();
+    return;
+  }
+
+  char *pText = (char *)GlobalLock(hData);
+  if (!pText) {
+    printf("Failed to lock clipboard data.");
+    CloseClipboard();
+    return;
+  }
+
+  strncpy(data, strdup(pText), data_size - 1);
+  data[data_size - 1] = '\0';
+
+  GlobalUnlock(hData);
+
+  CloseClipboard();
+}
 
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
                                 LPARAM lParam) {
@@ -339,6 +372,8 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam,
       wm->callbacks.mouse_move_callback(window_id, (double)p.x, (double)p.y,
                                         wm->callbacks.mouse_move_data);
     }
+    RedrawWindow(hwnd, NULL, NULL, RDW_INTERNALPAINT | RDW_UPDATENOW);
+
     break;
 
   case WM_MOUSELEAVE:

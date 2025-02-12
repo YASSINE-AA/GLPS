@@ -36,7 +36,7 @@ GLPS is actively evolving! Here’s a snapshot of what’s already implemented a
 |                          | Touchscreen Support   | ✅ Implemented     | ⬜ Planned       | Touch input events                                                       |
 | **Advanced Features**    | Wayland Compositor    | ✅ Implemented     | N/A              | Registry interactions (Wayland only)                                     |
 |                          | XDG-Shell Support     | ✅ Implemented     | N/A              | Surface and toplevel management (Wayland only)                           |
-|                          | Clipboard Integration | ✅ Implemented     | ⬜ Planned       | Cross-application data transfer                                          |
+|                          | Clipboard Integration | ✅ Implemented     | ✅ Implemented     | Cross-application data transfer                                          |
 |                          | Drag-and-Drop         | ✅ Implemented     | ✅ Implemented   | Enhanced user interaction                                                |
 | **Development Tools**    | Logging               | ✅ Implemented     | ✅ Implemented   | Integrated with [Pico Logger](https://github.com/YASSINE-AA/Pico-Logger) |
 

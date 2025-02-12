@@ -405,32 +405,46 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
 }
 
 double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
+    if (!wm->windows[window_id]->fps_is_init) {
 #ifdef GLPS_USE_WAYLAND
-  if (!wm->windows[window_id]->fps_is_init) {
-    clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
-    wm->windows[window_id]->fps_is_init = true;
-    return 0;
-  } else {
-    struct timespec end_time = {0};
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    double seconds =
-        end_time.tv_sec - wm->windows[window_id]->fps_start_time.tv_sec;
-    double nanoseconds =
-        end_time.tv_nsec - wm->windows[window_id]->fps_start_time.tv_nsec;
-
-    if (nanoseconds < 0) {
-      seconds--;
-      nanoseconds += 1000000000L;
-    }
-    wm->windows[window_id]->fps_start_time = end_time;
-    return (double)1.0 / ((seconds + nanoseconds) / 1e9);
-  }
+        clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
 #endif
 
 #ifdef GLPS_USE_WIN32
-  return 1.0f;
-
+        QueryPerformanceCounter(&wm->windows[window_id]->fps_start_time);
+        QueryPerformanceFrequency(&wm->windows[window_id]->fps_freq);
 #endif
+
+        wm->windows[window_id]->fps_is_init = true;
+        return 0.0;
+    } else {
+#ifdef GLPS_USE_WAYLAND
+        struct timespec end_time;
+        clock_gettime(CLOCK_MONOTONIC, &end_time);
+
+        double seconds = (double)(end_time.tv_sec - wm->windows[window_id]->fps_start_time.tv_sec);
+        double nanoseconds = (double)(end_time.tv_nsec - wm->windows[window_id]->fps_start_time.tv_nsec);
+
+        if (nanoseconds < 0) {
+            seconds -= 1.0;
+            nanoseconds += 1e9;
+        }
+
+        wm->windows[window_id]->fps_start_time = end_time;
+        return 1.0 / (seconds + nanoseconds / 1e9);
+#endif
+
+#ifdef GLPS_USE_WIN32
+        LARGE_INTEGER end_time;
+        QueryPerformanceCounter(&end_time);
+
+        double time_taken = (double)(end_time.QuadPart - wm->windows[window_id]->fps_start_time.QuadPart) /
+                            (double)wm->windows[window_id]->fps_freq.QuadPart;
+
+        wm->windows[window_id]->fps_start_time = end_time;
+        return 1.0 / time_taken;
+#endif
+    }
 }
 
 bool glps_wm_should_close(glps_WindowManager *wm) {

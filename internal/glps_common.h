@@ -12,8 +12,8 @@
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -23,8 +23,8 @@
 // Windows
 #ifdef GLPS_USE_WIN32
 #include <GL/gl.h>
-#include <windows.h>
 #include <tchar.h>
+#include <windows.h>
 #endif
 
 // Wayland
@@ -273,6 +273,9 @@ typedef struct {
   HWND hwnd;
   HDC hdc;
   glps_WindowProperties properties;
+  LARGE_INTEGER fps_start_time;
+  LARGE_INTEGER fps_freq;
+  bool fps_is_init;
 } glps_Win32Window;
 
 typedef struct {
@@ -282,8 +285,6 @@ typedef struct {
 } glps_Win32Context;
 
 #endif
-
-
 
 struct clipboard_data {
   char mime_type[64];

@@ -69,7 +69,7 @@ elseif(UNIX AND NOT APPLE)
             src/glps_wayland.c
             src/glps_window_manager.c
             src/utils/logger/pico_logger.c
-            src/egl_context.c
+            src/glps_egl_context.c
             src/xdg/wlr-data-control-unstable-v1.c
             src/xdg/xdg-decorations.c
             src/xdg/xdg-dialog.c

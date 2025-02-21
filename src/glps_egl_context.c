@@ -86,7 +86,7 @@ void glps_egl_make_ctx_current(glps_WindowManager *wm, size_t window_id) {
   }
 }
 
-void *glps_egl_get_proc_addr(char* name) { return eglGetProcAddress; }
+void *glps_egl_get_proc_addr(const char* name) { return eglGetProcAddress; }
 
 void glps_egl_destroy(glps_WindowManager *wm) {
 

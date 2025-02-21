@@ -17,7 +17,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "internal/utils/logger/pico_logger.h"
+#include "utils/logger/pico_logger.h"
 #include <stdlib.h>
 
 // Windows

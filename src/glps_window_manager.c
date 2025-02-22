@@ -22,13 +22,18 @@
 #include <xkbcommon/xkbcommon.h>
 #endif
 
+// *=========== X11 ===========* //
+#include "glps_x11.h"
+
 void glps_wm_set_mouse_enter_callback(
     glps_WindowManager *wm,
     void (*mouse_enter_callback)(size_t window_id, double mouse_x,
                                  double mouse_y, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL || mouse_enter_callback == NULL) {
+  if (wm == NULL || mouse_enter_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -39,9 +44,11 @@ void glps_wm_set_mouse_enter_callback(
 
 void glps_wm_set_mouse_leave_callback(
     glps_WindowManager *wm,
-    void (*mouse_leave_callback)(size_t window_id, void *data), void *data) {
+    void (*mouse_leave_callback)(size_t window_id, void *data), void *data)
+{
 
-  if (wm == NULL || mouse_leave_callback == NULL) {
+  if (wm == NULL || mouse_leave_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -54,9 +61,11 @@ void glps_wm_set_mouse_move_callback(
     glps_WindowManager *wm,
     void (*mouse_move_callback)(size_t window_id, double mouse_x,
                                 double mouse_y, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL || mouse_move_callback == NULL) {
+  if (wm == NULL || mouse_move_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -68,9 +77,11 @@ void glps_wm_set_mouse_move_callback(
 void glps_wm_set_mouse_click_callback(
     glps_WindowManager *wm,
     void (*mouse_click_callback)(size_t window_id, bool state, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL || mouse_click_callback == NULL) {
+  if (wm == NULL || mouse_click_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -84,9 +95,11 @@ void glps_wm_set_scroll_callback(
     void (*mouse_scroll_callback)(size_t window_id, GLPS_SCROLL_AXES axe,
                                   GLPS_SCROLL_SOURCE source, double value,
                                   int discrete, bool is_stopped, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL || mouse_scroll_callback == NULL) {
+  if (wm == NULL || mouse_scroll_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -97,9 +110,11 @@ void glps_wm_set_scroll_callback(
 
 void glps_wm_set_keyboard_enter_callback(
     glps_WindowManager *wm,
-    void (*keyboard_enter_callback)(size_t window_id, void *data), void *data) {
+    void (*keyboard_enter_callback)(size_t window_id, void *data), void *data)
+{
 
-  if (wm == NULL || keyboard_enter_callback == NULL) {
+  if (wm == NULL || keyboard_enter_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -113,9 +128,11 @@ void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
                                                              bool state,
                                                              const char *value,
                                                              void *data),
-                                   void *data) {
+                                   void *data)
+{
 
-  if (wm == NULL || keyboard_callback == NULL) {
+  if (wm == NULL || keyboard_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -126,9 +143,11 @@ void glps_wm_set_keyboard_callback(glps_WindowManager *wm,
 
 void glps_wm_set_keyboard_leave_callback(
     glps_WindowManager *wm,
-    void (*keyboard_leave_callback)(size_t window_id, void *data), void *data) {
+    void (*keyboard_leave_callback)(size_t window_id, void *data), void *data)
+{
 
-  if (wm == NULL || keyboard_leave_callback == NULL) {
+  if (wm == NULL || keyboard_leave_callback == NULL)
+  {
     LOG_CRITICAL("Window Manager and/or Callback function NULL.");
     return;
   }
@@ -142,9 +161,11 @@ void glps_wm_set_touch_callback(
     void (*touch_callback)(size_t window_id, int id, double touch_x,
                            double touch_y, bool state, double major,
                            double minor, double orientation, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL || touch_callback == NULL) {
+  if (wm == NULL || touch_callback == NULL)
+  {
     LOG_ERROR("Window Manager and/or Touch Callback NULL");
     return;
   }
@@ -154,11 +175,13 @@ void glps_wm_set_touch_callback(
 }
 
 void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
-                                 char *data) {
+                                 char *data)
+{
 
 #ifdef GLPS_USE_WAYLAND
   glps_WaylandContext *context = NULL;
-  if (wm == NULL || (context = __get_wl_context(wm)) == NULL) {
+  if (wm == NULL || (context = __get_wl_context(wm)) == NULL)
+  {
     LOG_ERROR("Couldn't attach data to clipboard, context is NULL.");
     return;
   }
@@ -184,9 +207,11 @@ void glps_wm_attach_to_clipboard(glps_WindowManager *wm, char *mime,
 }
 
 void glps_wm_get_from_clipboard(glps_WindowManager *wm, char *data,
-                                size_t data_size) {
+                                size_t data_size)
+{
 #ifdef GLPS_USE_WAYLAND
-  if (wm == NULL || data == NULL) {
+  if (wm == NULL || data == NULL)
+  {
     LOG_ERROR("Window Manager and/or data NULL.");
     return;
   }
@@ -204,15 +229,18 @@ void glps_wm_start_drag_n_drop(
     glps_WindowManager *wm, size_t origin_window_id,
     void (*drag_n_drop_callback)(size_t origin_window_id, char *mime,
                                  char *buff, void *data),
-    void *data) {
-  if (wm == NULL) {
+    void *data)
+{
+  if (wm == NULL)
+  {
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
 
 #ifdef GLPS_USE_WIN32
   glps_Win32Context *ctx = (glps_Win32Context *)wm->win32_ctx;
-  if (ctx == NULL) {
+  if (ctx == NULL)
+  {
     LOG_ERROR("Win32 context is NULL.");
     return;
   }
@@ -226,7 +254,8 @@ void glps_wm_start_drag_n_drop(
 #ifdef GLPS_USE_WAYLAND
 
   glps_WaylandContext *ctx = (glps_WaylandContext *)__get_wl_context(wm);
-  if (ctx == NULL) {
+  if (ctx == NULL)
+  {
     LOG_ERROR("Wayland context is NULL.");
     return;
   }
@@ -251,13 +280,15 @@ void glps_wm_start_drag_n_drop(
 #endif
 }
 
-void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval) {
+void glps_wm_swap_interval(glps_WindowManager *wm, unsigned int swap_interval)
+{
 #ifdef GLPS_USE_WAYLAND
   eglSwapInterval(wm->egl_ctx->dpy, 0);
 #endif
 }
 
-void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id) {
+void glps_wm_swap_buffers(glps_WindowManager *wm, size_t window_id)
+{
 #ifdef GLPS_USE_WAYLAND
   glps_egl_swap_buffers(wm, window_id);
 #endif
@@ -271,9 +302,11 @@ void glps_wm_window_set_resize_callback(
     glps_WindowManager *wm,
     void (*window_resize_callback)(size_t window_id, int width, int height,
                                    void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL) {
+  if (wm == NULL)
+  {
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
@@ -285,9 +318,11 @@ void glps_wm_window_set_resize_callback(
 void glps_wm_window_set_frame_update_callback(
     glps_WindowManager *wm,
     void (*window_frame_update_callback)(size_t window_id, void *data),
-    void *data) {
+    void *data)
+{
 
-  if (wm == NULL) {
+  if (wm == NULL)
+  {
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
@@ -298,9 +333,11 @@ void glps_wm_window_set_frame_update_callback(
 
 void glps_wm_window_set_close_callback(
     glps_WindowManager *wm,
-    void (*window_close_callback)(size_t window_id, void *data), void *data) {
+    void (*window_close_callback)(size_t window_id, void *data), void *data)
+{
 
-  if (wm == NULL) {
+  if (wm == NULL)
+  {
     LOG_ERROR("Window Manager is NULL.");
     return;
   }
@@ -309,16 +346,19 @@ void glps_wm_window_set_close_callback(
   wm->callbacks.window_close_data = data;
 }
 
-glps_WindowManager *glps_wm_init(void) {
+glps_WindowManager *glps_wm_init(void)
+{
 
   glps_WindowManager *wm = malloc(sizeof(glps_WindowManager));
   *wm = (glps_WindowManager){0};
-  if (!wm) {
+  if (!wm)
+  {
     LOG_ERROR("Failed to allocate memory for glps_WindowManager");
     return NULL;
   }
 #ifdef GLPS_USE_WAYLAND
-  if (!glps_wl_init(wm)) {
+  if (!glps_wl_init(wm))
+  {
     LOG_ERROR("Wayland init failed. exiting...");
     exit(EXIT_FAILURE);
   }
@@ -326,12 +366,15 @@ glps_WindowManager *glps_wm_init(void) {
 
 #elif defined(GLPS_USE_WIN32)
   glps_win32_init(wm);
+#elif defined(GLPS_USE_X11)
+  glps_x11_init(wm);
 #endif
 
   return wm;
 }
 
-void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
+void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id)
+{
 #ifdef GLPS_USE_WAYLAND
   glps_egl_make_ctx_current(wm, window_id);
 #endif
@@ -342,9 +385,11 @@ void glps_wm_set_window_ctx_curr(glps_WindowManager *wm, size_t window_id) {
 }
 
 void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
-                                   int *width, int *height) {
+                                   int *width, int *height)
+{
 
-  if (wm == NULL) {
+  if (wm == NULL)
+  {
     LOG_ERROR("Couldn't get window dimensions. Window Manager NULL. ");
     return;
   }
@@ -362,17 +407,21 @@ void glps_wm_window_get_dimensions(glps_WindowManager *wm, size_t window_id,
 #endif
 }
 
-void *glps_get_proc_addr(const char *name) {
+void *glps_get_proc_addr(const char *name)
+{
 #ifdef GLPS_USE_WAYLAND
   return glps_egl_get_proc_addr(name);
 #endif
 #ifdef GLPS_USE_WIN32
   return glps_wgl_get_proc_addr(name);
 #endif
+
+return NULL;
 }
 
 size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
-                             int width, int height) {
+                             int width, int height)
+{
 
   ssize_t window_id;
 #ifdef GLPS_USE_WAYLAND
@@ -383,15 +432,22 @@ size_t glps_wm_window_create(glps_WindowManager *wm, const char *title,
   window_id = glps_win32_window_create(wm, title, width, height);
 #endif
 
-  if (window_id < 0) {
+#ifdef GLPS_USE_X11
+  window_id = glps_x11_window_create(wm, title, width, height);
+#endif
+
+  if (window_id < 0)
+  {
     LOG_ERROR("Window creation failed.");
   }
   return window_id;
 }
 
-void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
+void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id)
+{
   if (wm == NULL || window_id >= wm->window_count ||
-      wm->windows[window_id] == NULL) {
+      wm->windows[window_id] == NULL)
+  {
     LOG_ERROR("Invalid window ID or window manager is NULL.");
     return;
   }
@@ -404,56 +460,65 @@ void glps_wm_window_destroy(glps_WindowManager *wm, size_t window_id) {
 #endif
 }
 
-double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id) {
-    if (!wm->windows[window_id]->fps_is_init) {
+double glps_wm_get_fps(glps_WindowManager *wm, size_t window_id)
+{
+  if (!wm->windows[window_id]->fps_is_init)
+  {
 #ifdef GLPS_USE_WAYLAND
-        clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
+    clock_gettime(CLOCK_MONOTONIC, &wm->windows[window_id]->fps_start_time);
 #endif
 
 #ifdef GLPS_USE_WIN32
-        QueryPerformanceCounter(&wm->windows[window_id]->fps_start_time);
-        QueryPerformanceFrequency(&wm->windows[window_id]->fps_freq);
+    QueryPerformanceCounter(&wm->windows[window_id]->fps_start_time);
+    QueryPerformanceFrequency(&wm->windows[window_id]->fps_freq);
 #endif
 
-        wm->windows[window_id]->fps_is_init = true;
-        return 0.0;
-    } else {
+    wm->windows[window_id]->fps_is_init = true;
+    return 0.0;
+  }
+  else
+  {
 #ifdef GLPS_USE_WAYLAND
-        struct timespec end_time;
-        clock_gettime(CLOCK_MONOTONIC, &end_time);
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
 
-        double seconds = (double)(end_time.tv_sec - wm->windows[window_id]->fps_start_time.tv_sec);
-        double nanoseconds = (double)(end_time.tv_nsec - wm->windows[window_id]->fps_start_time.tv_nsec);
+    double seconds = (double)(end_time.tv_sec - wm->windows[window_id]->fps_start_time.tv_sec);
+    double nanoseconds = (double)(end_time.tv_nsec - wm->windows[window_id]->fps_start_time.tv_nsec);
 
-        if (nanoseconds < 0) {
-            seconds -= 1.0;
-            nanoseconds += 1e9;
-        }
-
-        wm->windows[window_id]->fps_start_time = end_time;
-        return 1.0 / (seconds + nanoseconds / 1e9);
-#endif
-
-#ifdef GLPS_USE_WIN32
-        LARGE_INTEGER end_time;
-        QueryPerformanceCounter(&end_time);
-
-        double time_taken = (double)(end_time.QuadPart - wm->windows[window_id]->fps_start_time.QuadPart) /
-                            (double)wm->windows[window_id]->fps_freq.QuadPart;
-
-        wm->windows[window_id]->fps_start_time = end_time;
-        return 1.0 / time_taken;
-#endif
+    if (nanoseconds < 0)
+    {
+      seconds -= 1.0;
+      nanoseconds += 1e9;
     }
+
+    wm->windows[window_id]->fps_start_time = end_time;
+    return 1.0 / (seconds + nanoseconds / 1e9);
+#endif
+
+#ifdef GLPS_USE_WIN32
+    LARGE_INTEGER end_time;
+    QueryPerformanceCounter(&end_time);
+
+    double time_taken = (double)(end_time.QuadPart - wm->windows[window_id]->fps_start_time.QuadPart) /
+                        (double)wm->windows[window_id]->fps_freq.QuadPart;
+
+    wm->windows[window_id]->fps_start_time = end_time;
+    return 1.0 / time_taken;
+#endif
+  }
+
+  return -1.0f;
 }
 
-bool glps_wm_should_close(glps_WindowManager *wm) {
+bool glps_wm_should_close(glps_WindowManager *wm)
+{
 #ifdef GLPS_USE_WAYLAND
   return glps_wl_should_close(wm);
 #endif
 #ifdef GLPS_USE_WIN32
   MSG msg = {};
-  if (GetMessage(&msg, NULL, 0, 0)) {
+  if (GetMessage(&msg, NULL, 0, 0))
+  {
     TranslateMessage(&msg);
     DispatchMessage(&msg);
     return false;
@@ -461,21 +526,35 @@ bool glps_wm_should_close(glps_WindowManager *wm) {
 
   return true;
 #endif
+#ifdef GLPS_USE_X11
+  return glps_x11_should_close(wm);
+#endif
 }
 
-void glps_wm_destroy(glps_WindowManager *wm) {
+void glps_wm_destroy(glps_WindowManager *wm)
+{
 #ifdef GLPS_USE_WAYLAND
 
   glps_wl_destroy(wm);
-
 #endif
 
 #ifdef GLPS_USE_WIN32
   glps_win32_destroy(wm);
 #endif
+
+#ifdef GLPS_USE_X11
+  glps_x11_destroy(wm);
+#endif
+
+  if (wm)
+  {
+    free(wm);
+    wm = NULL;
+  }
 }
 
-void glps_wm_window_update(glps_WindowManager *wm, size_t window_id) {
+void glps_wm_window_update(glps_WindowManager *wm, size_t window_id)
+{
 
 #ifdef GLPS_USE_WAYLAND
   wl_update(wm, window_id);
@@ -484,5 +563,9 @@ void glps_wm_window_update(glps_WindowManager *wm, size_t window_id) {
 
 #ifdef GLPS_USE_WIN32
   InvalidateRect(wm->windows[window_id]->hwnd, NULL, TRUE);
+#endif
+
+#ifdef GLPS_USE_X11
+  glps_x11_window_update(wm, window_id);
 #endif
 }

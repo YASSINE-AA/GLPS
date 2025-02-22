@@ -2,25 +2,20 @@ cmake_minimum_required(VERSION 3.10)
 
 project(GLPS VERSION 1.0 LANGUAGES C)
 
-#set(CMAKE_SYSTEM_NAME Windows)
 set(CMAKE_CROSSCOMPILING 1)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-find_package(PkgConfig REQUIRED)
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-set(CMAKE_C_COMPILER "/usr/bin/x86_64-w64-mingw32-gcc")
-
-# Set the output format for libraries
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-    message(STATUS "Building for Win32")
+find_package(PkgConfig)
+if(PKG_CONFIG_FOUND)
+    pkg_check_modules(WAYLAND wayland-client wayland-egl egl)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_C_COMPILER "/usr/bin/x86_64-w64-mingw32-gcc-win32")
-    add_definitions(-DGLPS_USE_WIN32)
+    message(STATUS "Building for Windows")
 
     set(SOURCES
         src/glps_wgl_context.c
@@ -39,32 +34,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
     add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
-   set_target_properties(${PROJECT_NAME} PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        SOVERSION 1
-        OUTPUT_NAME ${PROJECT_NAME}
-         PREFIX ""  # Removes "lib" prefix, resulting in GLPS.dll instead of libGLPS.dll
-    SUFFIX ".dll"  # Ensures the output ends with .dll
-    )
-
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows")
-    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32 )
-message(STATUS "CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
-
-    # Ensure DLL and import library (.dll.a) are placed in the correct directory
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}
-    )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE GLPS_USE_WIN32)
+    target_compile_options(${PROJECT_NAME} PRIVATE -mwindows)
+    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32)
 
 elseif(UNIX AND NOT APPLE)
-    pkg_check_modules(WAYLAND wayland-client wayland-egl egl)
-
-    if(WAYLAND_FOUND)
+    if(!WAYLAND_FOUND)
         message(STATUS "Building for Linux Wayland")
-        add_definitions(-DGLPS_USE_WAYLAND)
-
         set(SOURCES
             src/glps_wayland.c
             src/glps_window_manager.c
@@ -90,33 +66,35 @@ elseif(UNIX AND NOT APPLE)
 
         add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            VERSION ${PROJECT_VERSION}
-            SOVERSION 1
-        )
-
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -g3 -fsanitize=address,undefined")
-
-        target_link_libraries(${PROJECT_NAME} PRIVATE
-            m
-            EGL
-            wayland-client
-            wayland-server
-            wayland-cursor
-            wayland-egl
-            xkbcommon
-        )
+        target_compile_definitions(${PROJECT_NAME} PRIVATE GLPS_USE_WAYLAND)
+        target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -g3 -fsanitize=address,undefined)
+        target_link_libraries(${PROJECT_NAME} PRIVATE m EGL wayland-client wayland-server wayland-cursor wayland-egl xkbcommon)
     else()
-        message(STATUS "Building for Linux X11")
-        add_definitions(-DGLPS_USE_X11)
+        message(STATUS "Building for X11")
+        set(SOURCES
+        src/glps_x11.c
+        src/glps_window_manager.c
+        src/utils/logger/pico_logger.c
+        )
+
+        set(HEADERS
+        internal/glps_x11.h
+        include/glps_window_manager.h
+        internal/glps_common.h
+        internal/utils/logger/pico_logger.h
+        )
+
+        add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
+
+        target_compile_definitions(${PROJECT_NAME} PRIVATE GLPS_USE_X11)
+       target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wno-unused-variable -Wno-unused-parameter -g3 -fsanitize=address,undefined)
+        target_link_libraries(${PROJECT_NAME} PRIVATE X11)
     endif()
 else()
     message(FATAL_ERROR "Unsupported platform")
 endif()
 
-# Include Directories
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/internal)
+include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/internal)
 
 if(UNIX AND NOT APPLE)
     include_directories(SYSTEM
@@ -129,10 +107,6 @@ if(UNIX AND NOT APPLE)
     )
 endif()
 
-# Create the Shared Library Target
-# (already handled above)
-
-# Installation Rules
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include/GLPS/)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/internal/ DESTINATION include/GLPS/)
 
@@ -149,5 +123,4 @@ install(EXPORT GLPSConfig
     DESTINATION lib/cmake/GLPS
 )
 
-# Enable Testing (if applicable)
 enable_testing()

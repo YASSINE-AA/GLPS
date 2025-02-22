@@ -17,11 +17,7 @@
 
 #include "glad/glad.h"
 #include "linmath.h"
-#include "glps_common.h"
-
-#include "glps_wayland.h"
-#include "glps_window_manager.h"
-#include "utils/logger/pico_logger.h"
+#include <GLPS/glps_window_manager.h>
 #include <math.h>
 #include <stdio.h>
 
@@ -107,7 +103,7 @@ void render_sine_wave(glps_WindowManager *wm, size_t window_id,
   glDrawArrays(GL_LINE_STRIP, 0, 100);
 
   glps_wm_swap_buffers(wm, window_id);
-  glps_wl_update(wm, window_id);
+  //glps_wl_update(wm, window_id);
 
   sine_wave_data->angle += 0.01f;
 }
@@ -177,7 +173,7 @@ void window_frame_update_callback(size_t window_id, void *data) {
   SineWaveData *sine_data = (SineWaveData *)data;
   render_sine_wave(sine_data->wm, window_id, sine_data);
   LOG_INFO("%.2lf FPS", (double)glps_wm_get_fps(sine_data->wm, window_id));
-  glps_wl_update(sine_data->wm, window_id);
+  //glps_wl_update(sine_data->wm, window_id);
 }
 
 void window_close_callback(size_t window_id, void *data) {
@@ -189,7 +185,9 @@ int main(int argc, char *argv[]) {
   glps_WindowManager *wm = glps_wm_init();
 
   size_t window_id = glps_wm_window_create(wm, "Sine Wave Example", 800, 600);
-  if (!gladLoadGLLoader((GLADloadproc)glps_get_proc_addr())) {
+  
+  
+  /*if (!gladLoadGL()) {
     fprintf(stderr, "Failed to initialize GLAD\n");
     exit(EXIT_FAILURE);
   }
@@ -235,9 +233,10 @@ int main(int argc, char *argv[]) {
   render_sine_wave(wm, window_id, &sine_wave_data);
 
   while (!glps_wm_should_close(wm)) {
-    glps_wl_update(wm, window_id); // smooth continuous rendering.
+    //glps_wl_update(wm, window_id); // smooth continuous rendering.
+    
   }
-
+*/
   glps_wm_destroy(wm);
   return 0;
 }

@@ -309,11 +309,20 @@ typedef struct
 
 #ifdef GLPS_USE_X11
 
-typedef struct 
+typedef struct
 {
-  
-} glps_X11Window;
+  Display *display;      /**< X11 display connection. */
+  GC gc;                 /**< Graphics context for rendering. */
+  Atom wm_delete_window; /**< Atom for handling window close events. */
+  XFontStruct *font;     /**< X11 font structure for text rendering. */
+} glps_X11Context;
 
+typedef struct
+{
+  Window window; /**< X11 window identifier. */
+  bool fps_is_init;
+
+} glps_X11Window;
 
 #endif
 
@@ -352,13 +361,8 @@ typedef struct
 #endif
 
 #ifdef GLPS_USE_X11
-  glps_Win32Window **windows; /**< Array of X11 window pointers. */
-  Display *display;           /**< X11 display connection. */
-  Window window;              /**< X11 window identifier. */
-  GC gc;                      /**< Graphics context for rendering. */
-  Atom wm_delete_window;      /**< Atom for handling window close events. */
-  XFontStruct *font;          /**< X11 font structure for text rendering. */
-
+  glps_X11Context *x11_ctx;
+  glps_X11Window **windows; /**< Array of X11 window pointers. */
 #endif
 
   char font_path[256];         /**< Path to the font file. */

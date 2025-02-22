@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-#include "internal/glps_x11.h"
+#include "glps_x11.h"
 
 void glps_x11_init(glps_WindowManager *wm)
 {
@@ -24,18 +24,22 @@ void glps_x11_init(glps_WindowManager *wm)
         exit(EXIT_FAILURE);
     }
 
-    wm->display = XOpenDisplay(NULL);
-    if (!wm->display)
+    wm->x11_ctx = (glps_X11Context *)malloc(sizeof(glps_X11Context));
+
+    wm->windows = (glps_X11Window **)malloc(sizeof(glps_X11Window *) * MAX_WINDOWS);
+
+    wm->x11_ctx->display = XOpenDisplay(NULL);
+    if (!wm->x11_ctx->display)
     {
         LOG_CRITICAL("Failed to open X display\n");
         exit(EXIT_FAILURE);
     }
 
-    wm->font = XLoadQueryFont(wm->display, "fixed");
-    if (!wm->font)
+    wm->x11_ctx->font = XLoadQueryFont(wm->x11_ctx->display, "fixed");
+    if (!wm->x11_ctx->font)
     {
         LOG_CRITICAL("Failed to load system font\n");
-        XCloseDisplay(wm->display);
+        XCloseDisplay(wm->x11_ctx->display);
         exit(EXIT_FAILURE);
     }
 }
@@ -44,37 +48,102 @@ ssize_t glps_x11_window_create(glps_WindowManager *wm, const char *title,
                                int width, int height)
 {
 
-    if (wm == NULL || wm->display == NULL)
+    if (wm == NULL || wm->x11_ctx->display == NULL)
     {
         LOG_CRITICAL("Failed to create X11 window. Window manager and/or Display NULL.");
         exit(EXIT_FAILURE);
     }
 
-    int screen = DefaultScreen(wm->display);
-
-    wm->window = XCreateSimpleWindow(
-        wm->display,
-        RootWindow(wm->display, screen),
+    int screen = DefaultScreen(wm->x11_ctx->display);
+    wm->windows[wm->window_count] = (glps_X11Window *)malloc(sizeof(glps_X11Window));
+    wm->windows[wm->window_count]->window = XCreateSimpleWindow(
+        wm->x11_ctx->display,
+        RootWindow(wm->x11_ctx->display, screen),
         10, 10, width, height, 1,
-        BlackPixel(wm->display, screen),
-        WhitePixel(wm->display, screen));
-    XSetWindowBackground(wm->display, wm->window, 0xFFFFFF);
-    XStoreName(wm->display, wm->window, title);
+        BlackPixel(wm->x11_ctx->display, screen),
+        WhitePixel(wm->x11_ctx->display, screen));
+    XSetWindowBackground(wm->x11_ctx->display, wm->windows[wm->window_count]->window, 0xFFFFFF);
+    XStoreName(wm->x11_ctx->display, wm->windows[wm->window_count]->window, title);
 
-    wm->gc = XCreateGC(wm->display, wm->window, 0, NULL);
+    wm->x11_ctx->gc = XCreateGC(wm->x11_ctx->display, wm->windows[wm->window_count]->window, 0, NULL);
 
-    wm->wm_delete_window = XInternAtom(wm->display, "WM_DELETE_WINDOW", False);
-    XSetWMProtocols(wm->display, wm-window, &wm->wm_delete_window, 1);
+    wm->x11_ctx->wm_delete_window = XInternAtom(wm->x11_ctx->display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(wm->x11_ctx->display, wm->windows[wm->window_count]->window, &wm->x11_ctx->wm_delete_window, 1);
 
-    XSelectInput(wm->display, wm->window,
+    XSelectInput(wm->x11_ctx->display, wm->windows[wm->window_count]->window,
                  ExposureMask | ButtonPressMask | KeyPressMask | StructureNotifyMask);
 
-    XMapWindow(wm->display, wm->window);
-
+    XMapWindow(wm->x11_ctx->display, wm->windows[wm->window_count]->window);
     return wm->window_count++;
 }
 
-void glps_x11_destroy(glps_WindowManager *wm);
+bool glps_x11_should_close(glps_WindowManager *wm)
+{
+    if (wm == NULL)
+    {
+        LOG_CRITICAL("Window Manager is NULL. Exiting..");
+        exit(EXIT_FAILURE);
+    }
+
+    XEvent event;
+
+    if (XPending(wm->x11_ctx->display) > 0)
+    {
+        XNextEvent(wm->x11_ctx->display, &event);
+
+        if (event.type == ClientMessage && event.xclient.data.l[0] == wm->x11_ctx->wm_delete_window)
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+void glps_x11_window_update(glps_WindowManager *wm, size_t window_id)
+{
+    XFlush(wm->x11_ctx->display);
+
+    XClearWindow(wm->x11_ctx->display, wm->windows[window_id]->window);
+}
+
+void glps_x11_destroy(glps_WindowManager *wm)
+{
+
+    if (wm->windows)
+    {
+        for (size_t i = 0; i < wm->window_count; ++i)
+        {
+            if (wm->windows[i]->window)
+            {
+                XDestroyWindow(wm->x11_ctx->display, wm->windows[i]->window);
+            }
+            free(wm->windows[i]);
+            wm->windows[i] = NULL;
+        }
+        free(wm->windows);
+        wm->windows = NULL;
+    }
+
+    if (wm->x11_ctx)
+    {
+        if (wm->x11_ctx->font)
+        {
+            XFreeFont(wm->x11_ctx->display, wm->x11_ctx->font);
+        }
+        if (wm->x11_ctx->display)
+        {
+            XCloseDisplay(wm->x11_ctx->display);
+        }
+        if(wm->x11_ctx->gc)
+        {
+            XFreeGC(wm->x11_ctx->display, wm->x11_ctx->gc);
+        }
+
+        free(wm->x11_ctx);
+        wm->x11_ctx=NULL;
+    }
+}
 void glps_x11_get_window_dimensions(glps_WindowManager *wm, size_t window_id,
                                     int *width, int *height);
 
